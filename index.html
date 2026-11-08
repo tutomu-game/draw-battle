@@ -699,7 +699,9 @@ function renderSetup() {
 
   const onlineBtn = h('button', { class: 'btn blue big', type: 'button', onclick: showOnline }, 'オンラインで遊ぶ（友達と）');
   const histBtn = h('button', { class: 'btn small', type: 'button', style: 'align-self:center', onclick: showHistory }, '📜 せんれき');
-  fill(dyn, dailyBtn(), onlineBtn, modeCard, howEl, setup, histBtn, installHint());
+  const legal = h('p', { style: 'text-align:center;font-size:12px;font-weight:800;opacity:.8' },
+    h('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, '利用規約'), ' ・ ', h('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, 'プライバシーポリシー'));
+  fill(dyn, dailyBtn(), onlineBtn, modeCard, howEl, setup, histBtn, installHint(), legal);
   updateAiStatus();
 }
 
@@ -1592,6 +1594,7 @@ function showReg(editing) {
     h('div', { class: 'grow' }),
     btn,
     accountBlock(editing),
+    editing ? blockedBlock() : null,
     editing ? h('button', { class: 'btn', type: 'button', onclick: () => go('title') }, 'キャンセル') : null);
   go('reg');
 }
@@ -2239,7 +2242,7 @@ async function showDailyBoard(submit, dateArg) {
   let entries = [], imgs = [], loadErr = false;
   try {
     const sn = await NET.db.collection(`daily/${date}/entries`).orderBy('score', 'desc').limit(20).get();
-    entries = sn.docs.map(d => ({ uid: d.id, ...d.data() }));
+    entries = sn.docs.map(d => ({ uid: d.id, ...d.data() })).filter(e => !isBlocked(e.uid));
     imgs = await Promise.all(entries.slice(0, 5).map(e => NET.db.doc(`dailyImg/${date}_${e.uid}`).get().then(x => (x.exists ? x.data().img : '')).catch(() => '')));
   } catch (e) { loadErr = true; }
   const mine = dailyLocal(date);
@@ -2252,10 +2255,11 @@ async function showDailyBoard(submit, dateArg) {
     h('button', { class: 'thumb', type: 'button', style: 'width:100%;aspect-ratio:4/5', 'aria-label': e.name + 'の絵を大きく見る', onclick: () => imgs[i] && openBox(imgs[i]) },
       imgs[i] ? h('img', { src: imgs[i], alt: e.name + 'の絵' }) : null),
     h('div', { class: 'rname', style: 'margin-top:8px' }, avatar(e.shape || 0, 24, true), h('span', { class: 'nm' }, e.name), h('b', { style: 'margin-left:auto;font-family:var(--f-display);font-weight:400;font-size:20px' }, e.score + '点')),
-    e.comment ? h('p', { class: 'seen', style: 'margin-top:4px' }, e.comment) : null));
+    e.comment ? h('p', { class: 'seen', style: 'margin-top:4px' }, e.comment) : null,
+    h('div', { style: 'text-align:right;margin-top:4px' }, reportBtn({ uid: e.uid, name: e.name, where: 'daily', ref: date + '_' + e.uid }, () => showDailyBoard(false, date)))));
   const list = entries.map((e, i) => h('div', { class: 'rname', style: 'padding:6px 4px;border-bottom:2px dashed rgba(27,27,47,.2)' + (e.uid === NET.me ? ';background:#FFF3B0;border-radius:10px' : '') },
     h('b', { style: 'width:34px;font-family:var(--f-display);font-weight:400' }, (i + 1) + '位'), avatar(e.shape || 0, 24, true), h('span', { class: 'nm' }, e.name),
-    h('b', { style: 'margin-left:auto' }, e.score + '点')));
+    h('b', { style: 'margin-left:auto' }, e.score + '点'), reportBtn({ uid: e.uid, name: e.name, where: 'daily-name', ref: date + '_' + e.uid }, () => showDailyBoard(false, date))));
   fill(el,
     h('div', {}, h('span', { class: 'pill' }, '📅 ' + date + ' の1題'), ' ', h('b', { style: 'font-size:14px' }, '「' + sp.topic + '」')),
     h('div', { class: 'row2', style: 'justify-content:center;gap:8px' },
@@ -2272,6 +2276,49 @@ async function showDailyBoard(submit, dateArg) {
     h('p', { style: 'text-align:center;font-size:12px;font-weight:800;opacity:.8' }, '挑戦は1日1回。あしたはあたらしいお題！'),
     h('div', { class: 'foot' }, h('button', { class: 'btn primary big', type: 'button', onclick: dailyHome }, 'タイトルにもどる')));
   go('result');
+}
+
+/* ---------- 通報・ブロック ---------- */
+function getBlocked() { try { return JSON.parse(localStorage.getItem('dbBlocked') || '{}') || {}; } catch (e) { return {}; } }
+function setBlocked(o) { try { localStorage.setItem('dbBlocked', JSON.stringify(o)); } catch (e) {} }
+function isBlocked(uid) { return !!getBlocked()[uid]; }
+function reportDialog(target, onDone) {
+  const ov = h('div', { role: 'dialog', 'aria-modal': 'true', 'aria-label': '通報とブロック', style: 'position:fixed;inset:0;z-index:50;background:rgba(27,27,47,.6);display:flex;align-items:center;justify-content:center;padding:18px' });
+  const close = () => ov.remove();
+  let reason = '';
+  const opts = ['不適切な絵（性的・暴力的など）', '不適切な名前', '嫌がらせ・その他'];
+  const msg = h('p', { class: 'err', style: 'min-height:1.2em' });
+  const radios = opts.map(o => h('label', { style: 'display:flex;gap:8px;align-items:center;font-weight:800;font-size:14px;padding:6px 0' },
+    h('input', { type: 'radio', name: 'rp-reason', onchange: () => { reason = o; } }), o));
+  const block = h('input', { type: 'checkbox', checked: true });
+  const send = h('button', { class: 'btn primary', type: 'button', onclick: async () => {
+    if (!reason) { msg.textContent = '理由をえらんでね'; return; }
+    send.disabled = true;
+    if (block.checked) { const b = getBlocked(); b[target.uid] = target.name || ''; setBlocked(b); }
+    try {
+      if (NET.state === 'ready') await NET.db.collection('reports').add({ target: target.uid, name: String(target.name || '').slice(0, 20), reason, where: target.where || '', ref: target.ref || '', by: NET.me, ts: Date.now() });
+    } catch (e) {}
+    close(); showToast('通報しました。ありがとう！' + (block.checked ? ' この人は表示されなくなります' : ''));
+    if (onDone) onDone();
+  } }, '通報する');
+  ov.append(h('div', { class: 'card stack', style: 'max-width:340px;width:100%;background:#fff' },
+    h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:20px' }, '🚩 ' + (target.name || 'この人') + ' さんを通報'),
+    h('div', {}, radios),
+    h('label', { style: 'display:flex;gap:8px;align-items:center;font-weight:800;font-size:13px' }, block, 'この人の絵・名前を表示しない（ブロック）'),
+    msg,
+    h('div', { class: 'row2', style: 'gap:8px' }, h('button', { class: 'btn', type: 'button', onclick: close }, 'やめる'), send)));
+  document.body.append(ov);
+}
+function reportBtn(target, onDone) {
+  if (!target.uid || target.uid === NET.me || NET.state !== 'ready') return null;
+  return h('button', { class: 'btn small', type: 'button', 'aria-label': (target.name || '') + 'さんを通報', style: 'padding:2px 8px;min-height:0;font-size:12px', onclick: ev => { ev.stopPropagation(); reportDialog(target, onDone); } }, '🚩');
+}
+function blockedBlock() {
+  const b = getBlocked(), ids = Object.keys(b);
+  if (!ids.length) return null;
+  return h('div', { class: 'card stack' }, h('b', {}, 'ブロック中の人'),
+    ...ids.map(id => h('div', { class: 'rname' }, h('span', { class: 'nm' }, b[id] || '(名前なし)'),
+      h('button', { class: 'btn small', type: 'button', style: 'margin-left:auto', onclick: () => { const x = getBlocked(); delete x[id]; setBlocked(x); showReg(true); } }, '解除'))));
 }
 
 /* ---------- PWA: ホーム画面に追加 ---------- */

@@ -58,6 +58,13 @@ service cloud.firestore {
         && request.resource.data.score is number
         && request.resource.data.score >= 0 && request.resource.data.score <= 30;
     }
+    match /reports/{id} {
+      allow create: if signedIn()
+        && request.resource.data.by == request.auth.uid
+        && request.resource.data.target is string
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() < 100;
+    }
     match /dailyImg/{id} {
       allow read: if signedIn();
       allow create: if signedIn()
