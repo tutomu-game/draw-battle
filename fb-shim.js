@@ -94,7 +94,7 @@
     const auth = F.getAuth(app);
     await (auth.authStateReady ? auth.authStateReady() : Promise.resolve());
     const uid = auth.currentUser ? auth.currentUser.uid : (await F.signInAnonymously(auth)).user.uid;
-    const db = F.initializeFirestore(app, { ignoreUndefinedProperties: true });
+    const db = F.initializeFirestore(app, { ignoreUndefinedProperties: true, experimentalAutoDetectLongPolling: true });
     const dbApi = makeDb(F, db);
     const room = makeRoom(F, db, uid);
     return {
