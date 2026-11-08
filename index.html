@@ -301,6 +301,7 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 <div id="lightbox" hidden><img alt="拡大した絵"></div>
 
 <script src="config.js"></script>
+<script src="fb-shim.js"></script>
 <script>
 (() => {
 'use strict';
@@ -1424,7 +1425,7 @@ function pushProfile() {
     const code = old.code || genCode(6, CODE_CH);
     if (old.name === PROFILE.name && old.shape === PROFILE.shape && old.code === code) return;
     await ref.set({ name: PROFILE.name, shape: PROFILE.shape, code, ts: Date.now() });
-  }).catch(e => { if (e && e.code === 'invalid_argument') { NET.state = 'ro'; refreshOnline(); } });
+  }).catch(e => { if (e && (e.code === 'invalid_argument' || e.code === 'permission-denied')) { NET.state = 'ro'; refreshOnline(); } });
   return pushing;
 }
 
@@ -1459,7 +1460,11 @@ function saveProfile(name, shape) {
 
 /* --- net init --- */
 async function netInit() {
-  const use = window.claude && window.claude.use ? n => window.claude.use(n) : async () => null;
+  let use = window.claude && window.claude.use ? n => window.claude.use(n) : async () => null;
+  const fbc = window.DRAW_CONFIG && window.DRAW_CONFIG.firebase;
+  if (!(window.claude && window.claude.use) && fbc && window.__fbInit) {
+    try { use = (await window.__fbInit(fbc)).use; } catch (e) { console.warn('firebase init failed', e); }
+  }
   try { NET.db = await use('db'); } catch (e) {}
   try { NET.user = await use('user'); } catch (e) {}
   if (NET.user) { try { NET.me = await NET.user.id(); } catch (e) {} }
@@ -1556,9 +1561,9 @@ function renderOnline() {
   if (NET.state !== 'ready') {
     const msg = {
       loading: 'つないでいます…',
-      nodb: window.claude ? 'この画面ではオンライン機能を使えません。共有されたページのリンクから開き直してください。' : 'オンライン対戦は準備中です。いまは1人プレイと、1台でのみんな対戦が遊べます。',
+      nodb: (window.DRAW_CONFIG && window.DRAW_CONFIG.firebase) ? 'オンラインにつながりませんでした。電波のよい場所で、ページを開き直してください。' : window.claude ? 'この画面ではオンライン機能を使えません。共有されたページのリンクから開き直してください。' : 'オンライン対戦は準備中です。いまは1人プレイと、1台でのみんな対戦が遊べます。',
       noid: 'ユーザー情報を取得できないため、オンライン機能を使えません。',
-      ro: '書き込み権限がないため、オンライン機能を使えません。ページの共有設定で、あなたを「編集できる」権限にしてもらってください。'
+      ro: (window.DRAW_CONFIG && window.DRAW_CONFIG.firebase) ? 'データを書き込めませんでした。ページを開き直してください。' : '書き込み権限がないため、オンライン機能を使えません。ページの共有設定で、あなたを「編集できる」権限にしてもらってください。'
     }[NET.state] || 'オンライン機能を使えません。';
     fill(el, head, h('div', { class: 'card' }, h('p', { style: 'font-weight:800' }, msg)));
     return;
