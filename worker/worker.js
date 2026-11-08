@@ -30,7 +30,7 @@ export default {
     const hdr = cors(env, req);
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: hdr });
     const url = new URL(req.url);
-    if (req.method === 'GET') return json({ ok: true, model: env.GEMINI_MODEL || 'gemini-2.5-flash' }, 200, hdr);
+    if (req.method === 'GET') return json({ ok: true, model: env.GEMINI_MODEL || 'gemini-3.5-flash-lite' }, 200, hdr);
     if (req.method !== 'POST' || url.pathname !== '/score') return json({ error: 'not_found' }, 404, hdr);
 
     const origin = req.headers.get('Origin') || '';
@@ -52,18 +52,21 @@ export default {
       if (!m) return json({ error: 'bad_request' }, 400, hdr);
       parts.push({ inline_data: { mime_type: m[1], data: m[2] } });
     }
-    const model = env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const model = env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
       body: JSON.stringify({
         contents: [{ role: 'user', parts }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } }
+        generationConfig: { temperature: 0.9, maxOutputTokens: 4096 }
       })
     });
     // 無料枠切れ・上限は 429 (RESOURCE_EXHAUSTED) で返る
     if (r.status === 429) return json({ error: 'quota' }, 429, hdr);
-    if (!r.ok) return json({ error: 'upstream', status: r.status }, 502, hdr);
+    if (!r.ok) {
+      let msg = ''; try { msg = String((await r.json()).error.message || '').slice(0, 160); } catch (e) {}
+      return json({ error: 'upstream', status: r.status, message: msg }, 502, hdr);
+    }
     const data = await r.json();
     const cand = data.candidates && data.candidates[0];
     const text = cand && cand.content && cand.content.parts ? cand.content.parts.map(p => p.text || '').join('') : '';

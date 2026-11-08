@@ -5,5 +5,5 @@ compatibility_date = "2025-01-01"
 [vars]
 # 公開するGitHub Pagesのオリジンに変更してください (カンマ区切りで複数可)
 ALLOWED_ORIGIN = "https://tutomu-game.github.io"
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
 # GEMINI_API_KEY は wrangler secret put GEMINI_API_KEY で設定 (ファイルに書かない)

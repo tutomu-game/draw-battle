@@ -685,7 +685,7 @@ function makeRelaySample(url) {
     } catch (e) { if (opt.signal && opt.signal.aborted) throw e; throw { code: 'network' }; }
     let d = null; try { d = await r.json(); } catch (e) {}
     if (r.status === 429) throw { code: d && d.error === 'quota' ? 'quota' : 'rate_limited' };
-    if (!r.ok || !d || !d.text) throw { code: 'server', detail: (d && d.error ? d.error : 'no_body') + (d && d.status ? ' ' + d.status : '') + ' / HTTP ' + r.status };
+    if (!r.ok || !d || !d.text) throw { code: 'server', detail: (d && d.error ? d.error : 'no_body') + (d && d.status ? ' ' + d.status : '') + ' / HTTP ' + r.status + (d && d.message ? ' / ' + d.message : '') };
     return { text: d.text, truncated: !!d.truncated };
   };
 }
