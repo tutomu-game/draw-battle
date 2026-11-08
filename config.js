@@ -1,2 +1,2 @@
-// 中継Worker(Cloudflare)のURLをここに設定します。例: "https://draw-battle-relay.xxxx.workers.dev"
-window.DRAW_CONFIG = { relayUrl: "" };
+// 中継Worker(Cloudflare)のURL
+window.DRAW_CONFIG = { relayUrl: "https://draw-battle-relay.tokushi-gm.workers.dev" };
