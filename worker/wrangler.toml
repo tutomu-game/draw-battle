@@ -1,0 +1,9 @@
+name = "draw-battle-relay"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# 公開するGitHub Pagesのオリジンに変更してください (カンマ区切りで複数可)
+ALLOWED_ORIGIN = "https://YOUR-NAME.github.io"
+GEMINI_MODEL = "gemini-2.5-flash"
+# GEMINI_API_KEY は wrangler secret put GEMINI_API_KEY で設定 (ファイルに書かない)
