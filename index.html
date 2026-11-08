@@ -698,7 +698,8 @@ function renderSetup() {
     status, start);
 
   const onlineBtn = h('button', { class: 'btn blue big', type: 'button', onclick: showOnline }, 'オンラインで遊ぶ（友達と）');
-  fill(dyn, onlineBtn, modeCard, howEl, setup, installHint());
+  const histBtn = h('button', { class: 'btn small', type: 'button', style: 'align-self:center', onclick: showHistory }, '📜 せんれき');
+  fill(dyn, dailyBtn(), onlineBtn, modeCard, howEl, setup, histBtn, installHint());
   updateAiStatus();
 }
 
@@ -1407,7 +1408,7 @@ function showResult() {
     cards,
     h('div', { class: 'foot' }, S.online
       ? (S.online.isHost ? h('button', { class: 'btn primary big', type: 'button', onclick: hostNext }, last ? '最終結果を見る' : '次のラウンドへ') : h('p', { class: 'wait' }, 'ホストが進めるのを待っています…'))
-      : h('button', { class: 'btn primary big', type: 'button', onclick: nextStep }, last ? '最終結果を見る' : '次のラウンドへ'))
+      : h('button', { class: 'btn primary big', type: 'button', onclick: nextStep }, last ? (S.mode === 'daily' ? '今日のランキングを見る' : '最終結果を見る') : '次のラウンドへ'))
   );
   go('result');
   SND.bgm('menu');
@@ -1418,6 +1419,7 @@ function showResult() {
 }
 
 function nextStep() {
+  if (S.mode === 'daily') return showDailyBoard(true);
   if (S.round + 1 < S.total) { S.round++; newRound(); } else showFinal();
 }
 
@@ -1458,6 +1460,7 @@ function showFinalSolo() {
   try { best = Number(localStorage.getItem(key)) || 0; } catch (e) {}
   const isNew = total > best;
   if (isNew) { try { localStorage.setItem(key, String(total)); } catch (e) {} }
+  recordHistory({ kind: S.mode, score: total, n: S.total });
   const [, letter, title] = soloRank(total / S.total);
   const played = S.history.filter(x => x.results);
   const rows = S.history.map((x, k) => h('div', { class: 'lrow' },
@@ -1490,6 +1493,7 @@ function showFinal() {
   const best = Math.max(...S.totals);
   const winners = S.totals.map((t, i) => i).filter(i => S.totals[i] === best);
   const rk = ranks(S.totals);
+  if (S.online && G.game) { const mi = (G.game.order || []).indexOf(NET.me); if (mi >= 0) recordHistory({ id: `online_${G.code}_${G.game.gen}`, kind: 'online', n: S.players.length, rank: rk[mi], score: S.totals[mi] }); }
   const order = S.totals.map((_, i) => i).sort((a, b) => S.totals[b] - S.totals[a] || a - b);
   const crown = h('span', { class: 'crown' });
   crown.innerHTML = `<svg viewBox="0 0 64 48" width="72" height="54" aria-hidden="true"><polygon points="6,40 4,10 20,24 32,6 44,24 60,10 58,40" fill="#FFC400" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/><circle cx="4" cy="10" r="4" fill="#fff" stroke="${INK}" stroke-width="3"/><circle cx="32" cy="6" r="4" fill="#fff" stroke="${INK}" stroke-width="3"/><circle cx="60" cy="10" r="4" fill="#fff" stroke="${INK}" stroke-width="3"/></svg>`;
@@ -1615,6 +1619,7 @@ async function netInit() {
   if (NET.state === 'ready') { startNet(); pushProfile(); }
   use('room').then(r => { NET.room = r; if (r && NET.state === 'ready') startRoom(); }).catch(() => {});
   refreshOnline();
+  if ($('#scr-title').classList.contains('active')) renderSetup();
 }
 
 function startNet() {
@@ -2069,6 +2074,157 @@ async function hostJudge(retry) {
 }
 
 /* ---------- boot ---------- */
+
+
+
+/* ---------- 戦歴 ---------- */
+const HKEY = 'dbHistory';
+const loadHistory = () => { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (e) { return []; } };
+function recordHistory(rec) {
+  try {
+    const list = loadHistory();
+    if (rec.id && list.some(x => x.id === rec.id)) { const i = list.findIndex(x => x.id === rec.id); list[i] = { ...list[i], ...rec }; }
+    else list.push({ ts: Date.now(), ...rec });
+    localStorage.setItem(HKEY, JSON.stringify(list.slice(-100)));
+  } catch (e) {}
+}
+const KIND_NAME = { attack: '縛りチャレンジ', guess: 'AIに当てさせろ', online: 'オンライン対戦', daily: '今日の1題' };
+function dailyStreak(list) {
+  const days = new Set(list.filter(x => x.kind === 'daily').map(x => x.date));
+  const d = new Date(Date.now() + 9 * 3600e3);
+  const fmt = dt => dt.toISOString().slice(0, 10);
+  if (!days.has(fmt(d))) d.setUTCDate(d.getUTCDate() - 1);
+  let n = 0;
+  while (days.has(fmt(d))) { n++; d.setUTCDate(d.getUTCDate() - 1); }
+  return n;
+}
+function showHistory() {
+  const list = loadHistory();
+  const daily = list.filter(x => x.kind === 'daily'), online = list.filter(x => x.kind === 'online');
+  const wins = online.filter(x => x.rank === 1).length;
+  const bestDaily = daily.length ? Math.max(...daily.map(x => x.score)) : 0;
+  const tile = (n, label) => h('div', { class: 'tile', style: 'text-align:center' }, h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:26px;display:block' }, n), label);
+  const rows = [...list].reverse().slice(0, 40).map(x => {
+    const d = new Date(x.ts + 9 * 3600e3), when = `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+    const sub = x.kind === 'online' ? `${x.n}人中 ${x.rank}位` : x.kind === 'daily' ? (x.rank ? `${x.rank}位（${x.topic}）` : x.topic || '') : `${x.n}ラウンド`;
+    return h('div', { class: 'lrow' }, h('div', { class: 'rk', style: 'font-size:13px' }, when),
+      h('div', { class: 'info' }, h('b', {}, KIND_NAME[x.kind] || x.kind), h('small', {}, sub)), h('div', { class: 'tt' }, x.score));
+  });
+  fill($('#scr-result'),
+    h('div', {}, h('span', { class: 'pill' }, '📜 せんれき')),
+    h('div', { class: 'how' },
+      tile(list.length, 'あそんだ回数'), tile(wins, 'オンライン優勝'), tile(dailyStreak(list) + '日', '今日の1題 連続')),
+    h('div', { class: 'how' },
+      tile(bestDaily ? bestDaily + '点' : '-', '今日の1題 ベスト'), tile(getBest('attack') || '-', '縛り ベスト'), tile(getBest('guess') || '-', '当てろ ベスト')),
+    rows.length ? h('div', { class: 'card stack' }, h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:18px' }, 'さいきんの結果'), rows)
+      : h('p', { class: 'wait' }, 'まだ記録がありません。1人プレイやオンライン対戦、今日の1題で遊ぶと、ここに残ります。'),
+    h('div', { class: 'foot' }, h('button', { class: 'btn primary big', type: 'button', onclick: () => { renderTitle(); go('title'); } }, 'タイトルにもどる')));
+  go('result'); SND.bgm('menu');
+}
+
+/* ---------- 今日の1題 ---------- */
+const hash32 = str => { let x = 2166136261; for (const ch of String(str)) { x ^= ch.charCodeAt(0); x = Math.imul(x, 16777619); } return x >>> 0; };
+const mulberry = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const todayJST = () => new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10);
+function dailySpec(date) {
+  const r = mulberry(hash32('draw-battle-' + date));
+  const topic = TOPICS[Math.floor(r() * TOPICS.length)];
+  const judge = JUDGES[Math.floor(r() * JUDGES.length)];
+  const keys = Object.keys(AXES).filter(k => k !== 'match');
+  for (let i = keys.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [keys[i], keys[j]] = [keys[j], keys[i]]; }
+  return { topic, judge, axes: ['match', ...keys.slice(0, 2)] };
+}
+const dailyAvailable = () => !!(NET.db && NET.me && NET.state === 'ready' && PROFILE && window.DRAW_CONFIG && window.DRAW_CONFIG.firebase);
+const dailyLocal = date => { try { return JSON.parse(localStorage.getItem('dbDaily_' + date) || 'null'); } catch (e) { return null; } };
+function dailyBtn() {
+  if (!dailyAvailable()) return null;
+  const date = todayJST(), done = dailyLocal(date);
+  return h('button', { class: 'btn big', type: 'button', style: 'background:var(--paper)', onclick: startDaily },
+    done ? `📅 今日の1題（挑戦ずみ ${done.score}点）` : '📅 今日の1題（毎日1回・みんな同じお題）');
+}
+
+async function startDaily() {
+  const date = todayJST();
+  SND.sfx('tap');
+  let played = dailyLocal(date);
+  if (!played) {
+    try {
+      const sn = await NET.db.doc(`daily/${date}/entries/${NET.me}`).get();
+      if (sn.exists) { const e = sn.data(); played = { score: e.score }; try { localStorage.setItem('dbDaily_' + date, JSON.stringify({ score: e.score })); } catch (x) {} }
+    } catch (e) {}
+  }
+  if (played) { showDailyBoard(false); return; }
+  if (S.ai.state !== 'ready') { showToast('いまはAI審査員が使えないので、あとでためしてね'); return; }
+  S.dailyPrev = S.dailyPrev || S.mode;
+  const sp = dailySpec(date);
+  S.mode = 'daily';
+  S.players = [PROFILE.name]; S.total = 1; S.totals = [0]; S.history = []; S.used = new Set(); S.round = 0; S.secs = 45; S.avIdx = null;
+  S.cur = { topic: sp.topic, axes: sp.axes, judge: sp.judge, rerolled: true, pi: 0, drawings: [], rule: null, choices: null, daily: date };
+  showIntro();
+}
+
+function dailyHome() {
+  if (S.dailyPrev) { S.mode = S.dailyPrev; S.dailyPrev = null; }
+  renderTitle(); go('title');
+}
+
+async function submitDaily(date, r, blob) {
+  const rec = { score: r.total, ts: Date.now() };
+  try { localStorage.setItem('dbDaily_' + date, JSON.stringify({ score: r.total, topic: S.cur.topic })); } catch (e) {}
+  const img = await blobToDataURL(blob);
+  await NET.db.doc(`dailyImg/${date}_${NET.me}`).set({ img });
+  await NET.db.doc(`daily/${date}/entries/${NET.me}`).set({ uid: NET.me, name: PROFILE.name, shape: PROFILE.shape, score: r.total, scores: r.scores || {}, comment: String(r.comment || '').slice(0, 90), ts: rec.ts });
+}
+
+async function showDailyBoard(submit, dateArg) {
+  const today = todayJST(), date = dateArg || today, sp = dailySpec(date), isToday = date === today;
+  const yesterday = new Date(Date.now() + 9 * 3600e3 - 86400e3).toISOString().slice(0, 10);
+  const el = $('#scr-result');
+  fill(el,
+    h('div', {}, h('span', { class: 'pill' }, '📅 ' + date + ' の1題'), ' ', h('b', { style: 'font-size:14px' }, '「' + sp.topic + '」')),
+    h('p', { class: 'wait' }, 'みんなの絵を集めています…'));
+  go('result'); SND.bgm('menu');
+  let sendErr = false;
+  if (submit && isToday && S.history[0] && S.history[0].results && !S.history[0].results[0].blank) {
+    try { await submitDaily(date, S.history[0].results[0], S.cur.drawings[0].blob); } catch (e) { sendErr = true; }
+  }
+  let entries = [], imgs = [], loadErr = false;
+  try {
+    const sn = await NET.db.collection(`daily/${date}/entries`).orderBy('score', 'desc').limit(20).get();
+    entries = sn.docs.map(d => ({ uid: d.id, ...d.data() }));
+    imgs = await Promise.all(entries.slice(0, 5).map(e => NET.db.doc(`dailyImg/${date}_${e.uid}`).get().then(x => (x.exists ? x.data().img : '')).catch(() => '')));
+  } catch (e) { loadErr = true; }
+  const mine = dailyLocal(date);
+  const me = mine ? mine.score : null;
+  const myRank = entries.findIndex(e => e.uid === NET.me) + 1;
+  if (submit && isToday && !sendErr && me != null) recordHistory({ id: 'daily_' + date, kind: 'daily', date, score: me, rank: myRank || null, topic: sp.topic });
+  const medal = ['rank r1', 'rank r2', 'rank r3', 'rank r4', 'rank r4'];
+  const top5 = entries.slice(0, 5).map((e, i) => h('div', { class: 'rcard', style: `--i:${i};margin-top:0` },
+    h('div', { class: medal[i] }, (i + 1) + '位'),
+    h('button', { class: 'thumb', type: 'button', style: 'width:100%;aspect-ratio:4/5', 'aria-label': e.name + 'の絵を大きく見る', onclick: () => imgs[i] && openBox(imgs[i]) },
+      imgs[i] ? h('img', { src: imgs[i], alt: e.name + 'の絵' }) : null),
+    h('div', { class: 'rname', style: 'margin-top:8px' }, avatar(e.shape || 0, 24, true), h('span', { class: 'nm' }, e.name), h('b', { style: 'margin-left:auto;font-family:var(--f-display);font-weight:400;font-size:20px' }, e.score + '点')),
+    e.comment ? h('p', { class: 'seen', style: 'margin-top:4px' }, e.comment) : null));
+  const list = entries.map((e, i) => h('div', { class: 'rname', style: 'padding:6px 4px;border-bottom:2px dashed rgba(27,27,47,.2)' + (e.uid === NET.me ? ';background:#FFF3B0;border-radius:10px' : '') },
+    h('b', { style: 'width:34px;font-family:var(--f-display);font-weight:400' }, (i + 1) + '位'), avatar(e.shape || 0, 24, true), h('span', { class: 'nm' }, e.name),
+    h('b', { style: 'margin-left:auto' }, e.score + '点')));
+  fill(el,
+    h('div', {}, h('span', { class: 'pill' }, '📅 ' + date + ' の1題'), ' ', h('b', { style: 'font-size:14px' }, '「' + sp.topic + '」')),
+    h('div', { class: 'row2', style: 'justify-content:center;gap:8px' },
+      h('button', { class: 'btn small' + (isToday ? ' primary' : ''), type: 'button', onclick: () => showDailyBoard(false, today) }, '今日'),
+      h('button', { class: 'btn small' + (!isToday ? ' primary' : ''), type: 'button', onclick: () => showDailyBoard(false, yesterday) }, 'きのう')),
+    me != null ? h('div', { class: 'card', style: 'text-align:center' },
+      h('p', { style: 'font-weight:800;font-size:13px' }, (isToday ? 'あなたの今日のスコア' : 'あなたのきのうのスコア')),
+      h('div', { class: 'rtotal', style: 'justify-content:center' }, h('b', {}, me), h('small', {}, '点')),
+      myRank ? h('p', { style: 'font-weight:800' }, `いま ${myRank}位 / 参加 ${entries.length}人以上`) : null) : null,
+    sendErr ? h('p', { class: 'err' }, 'スコアの送信に失敗しました。通信のよい所で、もう一度ひらいてね。') : null,
+    loadErr ? h('p', { class: 'err' }, 'ランキングを読み込めませんでした。') : null,
+    entries.length ? h('div', { class: 'stack' }, h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:20px' }, isToday ? '★ 今日のベスト5' : '★ きのうのベスト5'), h('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:12px' }, top5)) : (loadErr ? null : h('p', { class: 'wait' }, isToday ? 'まだ誰も挑戦していません。一番乗り！' : 'きのうの挑戦者はいませんでした。')),
+    entries.length ? h('div', { class: 'card stack' }, h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:18px' }, 'ランキング'), list) : null,
+    h('p', { style: 'text-align:center;font-size:12px;font-weight:800;opacity:.8' }, '挑戦は1日1回。あしたはあたらしいお題！'),
+    h('div', { class: 'foot' }, h('button', { class: 'btn primary big', type: 'button', onclick: dailyHome }, 'タイトルにもどる')));
+  go('result');
+}
 
 /* ---------- PWA: ホーム画面に追加 ---------- */
 let deferredInstall = null;

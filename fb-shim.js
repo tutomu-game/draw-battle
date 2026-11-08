@@ -23,6 +23,7 @@
         path,
         where: (f, op, v) => col(path, [...cons, F.where(f, op, v)]),
         limit: n => col(path, [...cons, F.limit(n)]),
+        orderBy: (f, dir) => col(path, [...cons, F.orderBy(f, dir || 'asc')]),
         get: async () => snapQ(await F.getDocs(q())),
         onSnapshot: (next, err) => F.onSnapshot(q(), s => next(snapQ(s)), err),
         doc: id => ref(path + '/' + (id || newId(path))),
