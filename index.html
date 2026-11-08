@@ -181,8 +181,8 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
 #cv{background:#fff;border:3px solid var(--ink);border-radius:12px;box-shadow:var(--shadow);touch-action:none;display:block;cursor:crosshair}
 .tools{display:flex;flex-direction:column;gap:8px;flex:none}
-.swatches{display:flex;gap:6px;justify-content:center;padding:0 6px}
-.sw{flex:1;max-width:44px;aspect-ratio:1;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer;padding:0;font-family:var(--f-display);font-size:13px;color:var(--ink);touch-action:manipulation}
+.swatches{display:flex;flex-wrap:wrap;gap:8px 6px;justify-content:center;padding:0 6px}
+.sw{flex:0 0 calc((100% - 42px) / 8);max-width:44px;aspect-ratio:1;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer;padding:0;font-family:var(--f-display);font-size:13px;color:var(--ink);touch-action:manipulation}
 .sw[aria-pressed="true"]{transform:scale(1.18);box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--ink)}
 .row2{display:flex;gap:8px;align-items:center}
 .sizes{display:flex;gap:6px;margin-right:auto}
@@ -202,6 +202,15 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 .rhead{display:flex;gap:10px;align-items:flex-start}
 .speech{position:relative;flex:1;background:var(--paper);border:3px solid var(--ink);border-radius:16px;padding:8px 12px;font-size:14px;font-weight:800;line-height:1.45}
 .rcard{position:relative;background:var(--paper);border:3px solid var(--ink);border-radius:20px;box-shadow:var(--shadow);padding:12px;margin-top:6px;opacity:0;animation:cardIn .45s cubic-bezier(.2,1.4,.4,1) forwards;animation-delay:calc(var(--i)*240ms + 150ms)}
+.stamps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.stp{display:inline-flex;align-items:center;gap:4px;border:2.5px solid var(--ink);border-radius:999px;background:#fff;padding:3px 9px;font-size:18px;line-height:1.3;cursor:pointer;touch-action:manipulation;color:var(--ink);font-family:inherit}
+.stp .ct{font-family:var(--f-display);font-size:13px}
+.stp .ct:empty{display:none}
+.stp[aria-pressed="true"]{background:var(--pink);color:#fff}
+.stp:active{transform:scale(.92)}
+.fly{position:fixed;z-index:60;pointer-events:none;font-size:28px;animation:fly .9s ease-out forwards}
+@keyframes fly{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-90px) scale(1.7)}}
+@media (prefers-reduced-motion: reduce){.fly{display:none}}
 @keyframes cardIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
 .rank{position:absolute;top:-12px;left:-6px;font-family:var(--f-display);font-size:16px;padding:2px 12px;border:3px solid var(--ink);border-radius:999px;background:var(--paper);transform:rotate(-5deg)}
 .rank.r1{background:#FFC400;font-size:19px}.rank.r2{background:#D9DEE8}.rank.r3{background:#E8A66B}
@@ -345,7 +354,31 @@ const TOPICS = [
   '月曜日の朝', 'しあわせな気分', 'やる気が出ない日', 'ドキドキの瞬間', '夢の中の世界',
   '未来の学校', '10年後の自分', 'かくれんぼ', '大そうじ', '大雨の遠足',
   '誕生日パーティー', '落とし穴にはまった人', '空を泳ぐ魚', 'お化け屋敷の受付', '巨大ロボと戦う小学生',
-  '朝ごはんを作る猫', '火山でキャンプ', '眠れない夜', '海賊のお宝さがし', 'おばけの運動会'
+  '朝ごはんを作る猫', '火山でキャンプ', '眠れない夜', '海賊のお宝さがし', 'おばけの運動会',
+
+  // どうぶつ
+  'かさを持つサル', 'マラソンをするカメ', '歌うカエルの合唱団', 'お昼寝するコアラ', '泳ぐゾウ', '怒ったニワトリ', 'おしゃれなキツネ', '泣いているシロクマ', '空を飛ぶカバ', 'ピアノを弾くネズミ',
+  '電車に乗るイヌ', '眠そうなフクロウ', '逆立ちするアヒル', '虫取りあみを持つカンガルー', '手をふるタヌキ', '走るダチョウ', 'お風呂に入るカピバラ', 'はしごを登るヘビ', 'しっぽが長すぎるサル', '本を読むウサギ',
+  // たべもの
+  '巨大なハンバーガー', 'ゆれるプリン', '山のようなフライドポテト', 'おでんの鍋', 'ケーキを運ぶ人', 'こげたパン', '回転ずしのレーン', '夏のスイカ割り', '熱々のピザ', 'おにぎりの遠足',
+  '大きな目玉のたまご', 'パフェの塔', 'カレー味のアイス', 'おもちを食べるおじいさん', 'クリスマスのチキン', '寿司を作るロボット', '溶けるチョコレート', 'ラーメンの湯気', 'ホットドッグの犬', '果物のバスケット',
+  // のりもの・場所
+  '空を走る新幹線', '宇宙を飛ぶバイク', '海を渡る自転車', '雲の上の遊園地', '山の上の駅', '森の中のバス停', '空飛ぶじゅうたん', '深海のホテル', '月の上のキャンプ場', '砂漠のオアシス',
+  '商店街のお祭り', '雪の中の温泉', '夕焼けの海岸', 'ジャングルの図書館', '地下のひみつ都市', '浮かぶ島', '星空のプラネタリウム', 'おばけ屋敷の遊園地', '巨大な滑り台', 'ツリーハウス',
+  // ファンタジー
+  'ドラゴンのお医者さん', '魔女のラーメン屋', '妖精の運動会', '勇者とスライムの友情', '宝箱をあける冒険者', '空飛ぶほうき', '魔法の杖をなくした魔法使い', '雲の上の王様', '眠る巨人', '人魚のコンサート',
+  '幽霊の引っ越し', '宇宙人の学校', 'ロボットの結婚式', 'タイムマシンの故障', '妖怪の夏祭り', '鬼ごっこをする鬼', '雪の女王のかき氷屋', '忍者の修行', '姫を助ける犬', '恐竜と散歩',
+  // にちじょう・シーン
+  '朝の満員電車', '寝ぐせのひどい朝', 'テストの前の日', '忘れ物に気づいた瞬間', '雨の日の通学路', 'お母さんの怒った顔', 'こたつでみかん', '夏休みの宿題', '運動会のリレー', '文化祭の準備',
+  '初めてのひとり旅', '散歩中のハプニング', '大掃除でみつけた宝物', '引っ越しの日', 'お風呂でうたう人', '星に願いをかける夜', '花火大会の帰り道', '遅刻しそうな朝', 'カラオケの盛り上がり', '雪合戦',
+  // スポーツ・あそび
+  '空中でダンクをきめる人', 'ゴールを決めた瞬間', 'ボウリングのストライク', '全力で走る運動会', '釣りで大物を釣った人', 'スケボーに乗る犬', '山登りの頂上', '縄跳びをする宇宙人', 'ブランコで空まで届く', 'かくれんぼの名人',
+  // きもち・ことば
+  'うれしい気持ち', 'ねむい午後', '緊張する発表会', 'わくわくする遠足前夜', 'ひらめいた瞬間', 'さみしい夕方', 'おこっている雷', 'ごきげんな朝', 'おなかがすいた', 'ありがとうの気持ち',
+  // ものの擬人化・へんなもの
+  'いばっているカサ', '泣いている消しゴム', '走るエレベーター', '歌う冷蔵庫', 'おしゃべりな信号機', '踊る洗濯機', '眠そうな時計', 'ぐるぐる回る扇風機', 'ヒーローになったスプーン', '空を飛ぶ靴',
+  // きせつ
+  '春のお花見', '夏の海水浴', '秋の紅葉狩り', '冬の雪だるま作り', 'ハロウィンの夜', 'お正月の初詣', '七夕のねがいごと', '節分の豆まき', 'クリスマスツリー', '梅雨のあじさい'
 ];
 
 const RULES = [
@@ -740,6 +773,7 @@ function makeChoices(topic) {
 }
 
 function newRound() {
+  editingTopic = false;
   const others = shuffle(Object.keys(AXES).filter(k => k !== 'match')).slice(0, 2);
   let judge;
   do { judge = JUDGES[rand(JUDGES.length)]; } while (judge.id === S.lastJudge);
@@ -757,12 +791,32 @@ function newRound() {
   showIntro();
 }
 
+
+/* ---------- お題を自分で書く ---------- */
+let editingTopic = false;
+const cleanTopic = v => String(v || '').replace(/[\r\n\u0000-\u001f]+/g, ' ').trim().slice(0, 24);
+function topicBlock(c, canEdit, apply, rerender) {
+  if (editingTopic && canEdit) {
+    const input = h('input', { type: 'text', id: 'custom-topic', class: 'reg-input', maxlength: '24', placeholder: '例: 逆立ちするペンギン', 'aria-label': 'お題' });
+    const ok = () => { const t = cleanTopic(input.value); if (!t) { input.focus(); return; } editingTopic = false; apply(t); };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') ok(); });
+    setTimeout(() => input.focus(), 50);
+    return h('div', { class: 'topic-card', style: 'transform:none' },
+      h('p', { class: 'k' }, 'お題を書いてね（24文字まで）'), h('div', { style: 'height:8px' }), input, h('div', { style: 'height:10px' }),
+      h('div', { class: 'row2', style: 'justify-content:center' },
+        h('button', { class: 'btn small primary', type: 'button', onclick: ok }, '決定'),
+        h('button', { class: 'btn small', type: 'button', onclick: () => { editingTopic = false; rerender(); } }, 'やめる')));
+  }
+  return h('div', { class: 'topic-card' }, h('p', { class: 'k' }, c.custom ? '今回のお題（自分で決めた）' : '今回のお題'), h('p', { class: 't' }, c.topic),
+    canEdit ? h('button', { class: 'btn small', type: 'button', style: 'margin-top:10px', onclick: () => { editingTopic = true; rerender(); } }, '✎ 自分で書く') : null);
+}
+
 function showIntro() {
   const c = S.cur, solo = S.players.length === 1;
   const el = $('#scr-intro');
   const reroll = h('button', { class: 'btn', type: 'button', onclick: () => {
     c.topic = pickTopic(); if (S.mode === 'guess') c.choices = makeChoices(c.topic);
-    c.rerolled = true; showIntro();
+    c.rerolled = true; c.custom = false; showIntro();
   } }, 'お題をかえる（1回だけ）');
   const ruleCard = c.rule ? h('div', { class: 'rule-card' },
     h('p', { class: 'k' }, '今回の縛り'), h('p', { class: 'n' }, c.rule.name), h('p', { class: 'd' }, c.rule.desc),
@@ -776,7 +830,7 @@ function showIntro() {
           h('i'), h('b', {}, AXES[k].name), h('span', {}, AXES[k].hint)))));
   fill(el,
     h('div', {}, h('span', { class: 'pill' }, `ROUND ${S.round + 1} / ${S.total}`)),
-    h('div', { class: 'topic-card' }, h('p', { class: 'k' }, '今回のお題'), h('p', { class: 't' }, c.topic)),
+    topicBlock(c, S.mode === 'battle', t => { c.topic = t; c.custom = true; showIntro(); }, showIntro),
     ruleCard, info,
     h('div', { class: 'judge-row' }, badge(c.judge), h('div', {}, h('div', { style: 'font-size:12px;font-weight:800;opacity:.8' }, '審査員'), h('b', { style: 'font-family:var(--f-display);font-weight:400' }, c.judge.name))),
     h('div', { class: 'grow' }),
@@ -809,7 +863,7 @@ function showPass() {
 /* ---------- drawing ---------- */
 const cv = $('#cv');
 const ctx = cv.getContext('2d');
-const COLORS = [['#1B1B2F', 'くろ'], ['#E0391F', 'あか'], ['#FF9500', 'オレンジ'], ['#FFD60A', 'きいろ'], ['#2DB55D', 'みどり'], ['#2F6BFF', 'あお'], ['#AF52DE', 'むらさき'], ['#8B5E3C', 'ちゃいろ']];
+const COLORS = [['#1B1B2F', 'くろ'], ['#8E8E93', 'はいいろ'], ['#E0391F', 'あか'], ['#FF6FAE', 'ピンク'], ['#FF9500', 'オレンジ'], ['#FFD60A', 'きいろ'], ['#9BE04A', 'きみどり'], ['#2DB55D', 'みどり'], ['#35C6F4', 'みずいろ'], ['#2F6BFF', 'あお'], ['#1F3A93', 'こん'], ['#AF52DE', 'むらさき'], ['#7A1E5C', 'ぶどう'], ['#F4C7A1', 'はだいろ'], ['#8B5E3C', 'ちゃいろ']];
 const SIZES = [6, 16, 36];
 const D = { strokes: [], color: COLORS[0][0], erase: false, size: SIZES[1], drawing: false, cur: null, timer: null, deadline: 0, clearArm: 0, ptr: null };
 
@@ -1009,8 +1063,9 @@ function judgeError(err, retry = runJudging, skip = skipRound) {
     : code === 'not_granted' ? 'AI審査の許可が出ませんでした。もう一度ボタンを押して、許可してください。'
     : code === 'rate_limited' ? '審査員が混み合っています。少し待ってからもう一度押してください。'
     : code === 'timeout' ? '審査に時間がかかりすぎました。もう一度試してください。'
-    : code === 'parse' ? '審査員の答えが読み取れませんでした。もう一度試してください。'
-    : '審査がうまくいきませんでした。もう一度試してください。';
+    : code === 'parse' ? '審査員の答えが読み取れませんでした。もう一度試してください。' + (err.detail ? '（' + err.detail + '）' : '')
+    : code === 'rate_limited' ? '審査員が混み合っています。少し待ってからもう一度押してください。'
+    : '審査がうまくいきませんでした。もう一度試してください。' + (code ? '（' + code + '）' : '');
   fill($('#scr-judge'), 
     h('div', { class: 'grow' }), badge(c.judge, true),
     h('div', { class: 'err', role: 'alert' }, msg),
@@ -1127,37 +1182,54 @@ pick は選択肢の番号（1始まり）。`;
 
 function parseGuess(text) {
   const a = text.indexOf('{'), b = text.lastIndexOf('}');
-  if (a < 0 || b <= a) throw { code: 'parse' };
+  if (a < 0 || b <= a) throw { code: 'parse', detail: 'no_json' };
   let obj;
-  try { obj = JSON.parse(text.slice(a, b + 1)); } catch (e) { throw { code: 'parse' }; }
+  try { obj = JSON.parse(text.slice(a, b + 1)); } catch (e) { throw { code: 'parse', detail: 'bad_json' }; }
   const pick = Math.round(Number(obj.pick));
-  if (!(pick >= 1 && pick <= S.cur.choices.length)) throw { code: 'parse' };
+  if (!(pick >= 1 && pick <= S.cur.choices.length)) throw { code: 'parse', detail: 'bad_pick' };
   const conf = Math.max(0, Math.min(100, Math.round(Number(obj.confidence)) || 0));
   return { pickIndex: pick - 1, seen: String(obj.seen || '').slice(0, 40), conf, comment: String(obj.comment || '').slice(0, 90) };
 }
 
 function parseAI(text, sent) {
   const a = text.indexOf('{'), b = text.lastIndexOf('}');
-  if (a < 0 || b <= a) throw { code: 'parse' };
+  if (a < 0 || b <= a) throw { code: 'parse', detail: 'no_json' };
   let obj;
-  try { obj = JSON.parse(text.slice(a, b + 1)); } catch (e) { throw { code: 'parse' }; }
+  try { obj = JSON.parse(text.slice(a, b + 1)); } catch (e) { throw { code: 'parse', detail: 'bad_json' }; }
   const map = {};
   for (const p of (obj.players || [])) {
     const pi = sent[Number(p.index) - 1];
     if (pi === undefined) continue;
     const scores = {};
+    const got = S.cur.axes.map(k => Math.round(Number(p.scores && p.scores[k]))).filter(Number.isFinite);
+    if (!got.length) throw { code: 'parse', detail: 'no_scores' };
+    const fallback = Math.round(got.reduce((x, y) => x + y, 0) / got.length);
     for (const k of S.cur.axes) {
       const v = Math.round(Number(p.scores && p.scores[k]));
-      if (!Number.isFinite(v)) throw { code: 'parse' };
-      scores[k] = Math.max(0, Math.min(10, v));
+      scores[k] = Math.max(0, Math.min(10, Number.isFinite(v) ? v : fallback));
     }
     map[pi] = { scores, comment: String(p.comment || '').slice(0, 90), seen: String(p.seen || '').slice(0, 40) };
   }
-  for (const pi of sent) if (!map[pi]) throw { code: 'parse' };
+  for (const pi of sent) if (!map[pi]) throw { code: 'parse', detail: 'missing_player' };
   return { summary: String(obj.summary || '').slice(0, 130), map };
 }
 
+const sleepMs = ms => new Promise(r => setTimeout(r, ms));
 async function askAI(sent) {
+  let last;
+  for (let i = 0; i < 3; i++) {
+    try { return await askAIOnce(sent); }
+    catch (e) {
+      last = e;
+      const code = e && e.code;
+      if (i === 2 || !['parse', 'server', 'network', 'rate_limited'].includes(code)) throw e;
+      await sleepMs(code === 'rate_limited' ? 5000 : 1200 * (i + 1));
+    }
+  }
+  throw last;
+}
+
+async function askAIOnce(sent) {
   const c = S.cur, guess = S.mode === 'guess';
   const ctrl = new AbortController();
   const to = setTimeout(() => ctrl.abort(), 90000);
@@ -1166,7 +1238,7 @@ async function askAI(sent) {
       images: sent.map(pi => c.drawings[pi].blob),
       modelTier: 'default', cache: false, signal: ctrl.signal
     });
-    if (!res || res.truncated || !res.text) throw { code: 'parse' };
+    if (!res || res.truncated || !res.text) throw { code: 'parse', detail: res && res.truncated ? 'truncated' : 'empty' };
     return guess ? parseGuess(res.text) : parseAI(res.text, sent);
   } catch (e) {
     if (ctrl.signal.aborted) throw { code: 'timeout' };
@@ -1228,6 +1300,66 @@ function ranks(totals) {
   return totals.map(t => sorted.indexOf(t) + 1);
 }
 
+
+/* ---------- スタンプ(リアクション) ---------- */
+const STAMPS = [['like', '👍', 'いいね'], ['lol', '😂', 'わらった'], ['love', '😍', 'すき'], ['wow', '😱', 'びっくり'], ['clap', '👏', 'すごい'], ['fire', '🔥', 'あつい']];
+let myReact = {};
+const reactKey = () => (G.game ? `${G.game.gen}_${G.game.round}` : '');
+function stampCounts(pi) {
+  const out = {};
+  if (S.online && G.game) {
+    const uid = G.game.order[pi], key = reactKey();
+    const add = (map) => { const arr = map && map[key] && map[key][uid]; if (Array.isArray(arr)) arr.forEach(id => { out[id] = (out[id] || 0) + 1; }); };
+    G.members.forEach(m => { if (m.uid !== NET.me) add(m.react); });
+    add(myReact);
+  } else {
+    const hist = S.history[S.history.length - 1];
+    return (hist && hist.reacts && hist.reacts[pi]) || out;
+  }
+  return out;
+}
+function paintStamps(bar) {
+  const pi = Number(bar.dataset.pi), counts = stampCounts(pi);
+  let mine = [];
+  if (S.online && G.game) { const m = myReact[reactKey()]; mine = (m && m[G.game.order[pi]]) || []; }
+  bar.querySelectorAll('.stp').forEach(b => {
+    const id = b.dataset.id, n = counts[id] || 0;
+    b.querySelector('.ct').textContent = n ? String(n) : '';
+    b.setAttribute('aria-pressed', String(mine.includes(id)));
+  });
+}
+function refreshStamps() { document.querySelectorAll('#scr-result .stamps').forEach(paintStamps); }
+function flyEmoji(btn, em) {
+  const r = btn.getBoundingClientRect();
+  const el = h('span', { class: 'fly', 'aria-hidden': 'true', style: `left:${r.left + r.width / 2 - 14 + (Math.random() * 16 - 8)}px;top:${r.top - 6}px` }, em);
+  document.body.append(el); setTimeout(() => el.remove(), 1000);
+}
+let rq = Promise.resolve();
+function tapStamp(pi, id, btn, em) {
+  SND.sfx('tap'); flyEmoji(btn, em);
+  if (S.online && G.game) {
+    const key = reactKey(), uid = G.game.order[pi];
+    myReact[key] = myReact[key] || {};
+    const arr = myReact[key][uid] || [];
+    myReact[key][uid] = arr.includes(id) ? arr.filter(x => x !== id) : [...arr, id];
+    const snap = JSON.parse(JSON.stringify(myReact)), code = G.code;
+    rq = rq.then(() => NET.db.doc(`games/${code}/members/${NET.me}`).update({ react: snap })).catch(() => {});
+  } else {
+    const hist = S.history[S.history.length - 1];
+    hist.reacts = hist.reacts || {};
+    const m = hist.reacts[pi] = hist.reacts[pi] || {};
+    m[id] = Math.min(99, (m[id] || 0) + 1);
+  }
+  refreshStamps();
+}
+function stampBar(pi) {
+  const bar = h('div', { class: 'stamps', 'data-pi': pi, role: 'group', 'aria-label': 'スタンプ' },
+    STAMPS.map(([id, em, label]) => h('button', { class: 'stp', type: 'button', 'data-id': id, 'aria-label': label, 'aria-pressed': 'false',
+      onclick: e => tapStamp(pi, id, e.currentTarget, em) }, em, h('span', { class: 'ct' }))));
+  paintStamps(bar);
+  return bar;
+}
+
 function showResult() {
   const hist = S.history[S.history.length - 1];
   const solo = S.players.length === 1;
@@ -1258,7 +1390,8 @@ function showResult() {
         h('button', { class: 'thumb', type: 'button', 'aria-label': S.players[pi] + 'の絵を大きく見る', onclick: () => openBox(r.url) }, h('img', { src: r.url, alt: S.players[pi] + 'の絵' })),
         h('div', { class: 'rinfo' }, body)),
       h('p', { class: 'bubble' }, r.comment),
-      r.seen ? h('p', { class: 'seen' }, `AIにはこう見えた: ${r.seen}`) : null);
+      r.seen ? h('p', { class: 'seen' }, `AIにはこう見えた: ${r.seen}`) : null,
+      solo ? null : stampBar(pi));
   });
   fill($('#scr-result'),
     h('div', {}, h('span', { class: 'pill' }, `ROUND ${S.round + 1} / ${S.total} の結果`), ' ', h('b', { style: 'font-size:14px' }, '「' + hist.topic + '」')),
@@ -1679,6 +1812,7 @@ function enterRoom(code, isHost) {
   G.unsubs.push(NET.db.collection(base + '/members').onSnapshot(sn => {
     G.members = sn.docs.map(d => ({ uid: d.id, ...d.data() }));
     if (G.game && G.game.phase === 'lobby') renderLobby();
+    if ($('#scr-result').classList.contains('active')) refreshStamps();
   }, bad));
   G.unsubs.push(NET.db.collection(base + '/drawings').onSnapshot(sn => {
     const m = {}; sn.docs.forEach(d => { m[d.id] = d.data(); }); G.drawings = m;
@@ -1693,7 +1827,7 @@ function enterRoom(code, isHost) {
 function resetLocalRoom() {
   G.unsubs.forEach(f => { try { f(); } catch (e) {} });
   if (G.stopJudge) { G.stopJudge(); G.stopJudge = null; }
-  D.drawing = false; clearInterval(D.timer);
+  D.drawing = false; clearInterval(D.timer); myReact = {};
   const prev = G.prevMode;
   Object.assign(G, { code: null, isHost: false, game: null, members: [], drawings: {}, results: {}, unsubs: [], key: '', shownKey: '', myDone: false, judging: false });
   S.online = null; S.avIdx = null; S.mode = prev || 'battle';
@@ -1721,7 +1855,7 @@ function prepareS(d) {
   S.online = { code: G.code, isHost: G.isHost };
   S.mode = 'battle';
   S.players = d.names || []; S.avIdx = d.shapes || null; S.total = d.total; S.secs = d.secs; S.round = d.round;
-  S.cur = { topic: d.topic, axes: d.axes || [], judge: JUDGES.find(j => j.id === d.judge) || JUDGES[0], rerolled: !!d.rerolled, pi: Math.max(0, (d.order || []).indexOf(NET.me)), drawings: [], rule: null, choices: null };
+  S.cur = { topic: d.topic, axes: d.axes || [], judge: JUDGES.find(j => j.id === d.judge) || JUDGES[0], rerolled: !!d.rerolled, custom: !!d.custom, pi: Math.max(0, (d.order || []).indexOf(NET.me)), drawings: [], rule: null, choices: null };
 }
 
 function onGameDoc(sn) {
@@ -1744,7 +1878,7 @@ function onGameDoc(sn) {
   }
   if (!d.order || d.order.indexOf(NET.me) < 0) { leaveRoom(); showToast('ゲームがもう始まっています'); return; }
   if (d.phase === 'judging') { if (fresh && !G.isHost) { go('judge'); SND.bgm(null); G.stopJudge = judgeLoading(); } return; }
-  if (d.phase === 'intro') { prepareS(d); showIntroOnline(fresh); return; }
+  if (d.phase === 'intro') { if (fresh) editingTopic = false; prepareS(d); showIntroOnline(fresh); return; }
   if (!fresh) return;
   prepareS(d);
   if (d.phase === 'draw') { G.myDone = false; startDraw(); }
@@ -1829,7 +1963,7 @@ function roundFields() {
   let judge;
   do { judge = JUDGES[rand(JUDGES.length)]; } while (judge.id === G.lastJudge);
   G.lastJudge = judge.id;
-  return { topic: pickTopic(), axes: ['match', ...others], judge: judge.id, rerolled: false };
+  return { topic: pickTopic(), axes: ['match', ...others], judge: judge.id, rerolled: false, custom: false };
 }
 async function hostStart() {
   const list = orderedMembers();
@@ -1838,7 +1972,7 @@ async function hostStart() {
   await gameUpdate({ order: list.map(m => m.uid), names: list.map(m => m.name), shapes: assignShapes(list), phase: 'intro', round: 0, ...roundFields() });
 }
 function hostNewRound(r) { return gameUpdate({ phase: 'intro', round: r, ...roundFields() }); }
-function hostReroll() { return gameUpdate({ topic: pickTopic(), rerolled: true }); }
+function hostReroll() { return gameUpdate({ topic: pickTopic(), rerolled: true, custom: false }); }
 function hostBeginDraw() { return gameUpdate({ phase: 'draw' }); }
 function hostNext() {
   const d = G.game;
@@ -1856,7 +1990,7 @@ function showIntroOnline(fresh) {
   const host = G.isHost;
   fill(el,
     h('div', {}, h('span', { class: 'pill' }, `ROUND ${S.round + 1} / ${S.total}`)),
-    h('div', { class: 'topic-card' }, h('p', { class: 'k' }, '今回のお題'), h('p', { class: 't' }, c.topic)),
+    topicBlock(c, host, t => gameUpdate({ topic: t, custom: true }), () => showIntroOnline(false)),
     h('div', { class: 'stack' },
       h('p', { class: 'lbl', style: 'font-weight:800;font-size:14px' }, '今回の採点（各10点）'),
       h('div', { class: 'axes' }, c.axes.map(k => h('div', { class: 'axis', style: `--c:${AXES[k].color}` }, h('i'), h('b', {}, AXES[k].name), h('span', {}, AXES[k].hint))))),

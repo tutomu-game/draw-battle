@@ -58,11 +58,16 @@ export default {
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
       body: JSON.stringify({
         contents: [{ role: 'user', parts }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 4096 }
+        generationConfig: { temperature: 0.9, maxOutputTokens: 4096, responseMimeType: 'application/json' }
       })
     });
     // 無料枠切れ・上限は 429 (RESOURCE_EXHAUSTED) で返る
-    if (r.status === 429) return json({ error: 'quota' }, 429, hdr);
+    if (r.status === 429) {
+      // 1日の上限(無料枠切れ)と、1分あたりの混雑を区別する
+      let t = ''; try { t = JSON.stringify(await r.json()); } catch (e) {}
+      const daily = /PerDay|per day|daily/i.test(t);
+      return json({ error: daily ? 'quota' : 'rate_limited', message: t.slice(0, 160) }, 429, hdr);
+    }
     if (!r.ok) {
       let msg = ''; try { msg = String((await r.json()).error.message || '').slice(0, 160); } catch (e) {}
       return json({ error: 'upstream', status: r.status, message: msg }, 502, hdr);
