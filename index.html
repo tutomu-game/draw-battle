@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>お絵描きバトル</title>
+<meta name="theme-color" content="#FFD54A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="お絵描き">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
@@ -690,7 +698,7 @@ function renderSetup() {
     status, start);
 
   const onlineBtn = h('button', { class: 'btn blue big', type: 'button', onclick: showOnline }, 'オンラインで遊ぶ（友達と）');
-  fill(dyn, onlineBtn, modeCard, howEl, setup);
+  fill(dyn, onlineBtn, modeCard, howEl, setup, installHint());
   updateAiStatus();
 }
 
@@ -2061,6 +2069,28 @@ async function hostJudge(retry) {
 }
 
 /* ---------- boot ---------- */
+
+/* ---------- PWA: ホーム画面に追加 ---------- */
+let deferredInstall = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; if ($('#scr-title').classList.contains('active')) renderSetup(); });
+addEventListener('appinstalled', () => { deferredInstall = null; });
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function installHint() {
+  if (isStandalone()) return null;
+  if (deferredInstall) {
+    return h('button', { class: 'btn small', type: 'button', style: 'align-self:center', onclick: async () => {
+      const ev = deferredInstall; deferredInstall = null; try { await ev.prompt(); } catch (e) {} renderSetup();
+    } }, '📲 ホーム画面に追加して、アプリみたいに遊ぶ');
+  }
+  if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    return h('p', { style: 'text-align:center;font-size:12px;font-weight:800;opacity:.85' }, 'Safariの共有ボタン □↑ →「ホーム画面に追加」で、アプリみたいに遊べるよ');
+  }
+  return null;
+}
+if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(localhost|127\.)/.test(location.hostname + '.')) {
+  addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+
 function boot(saved) {
   if (saved && typeof saved === 'object') {
     if ([2, 3, 4].includes(saved.n)) S.n = saved.n;

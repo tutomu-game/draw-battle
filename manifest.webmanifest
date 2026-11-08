@@ -1,0 +1,17 @@
+{
+  "name": "お絵描きバトル",
+  "short_name": "お絵描き",
+  "description": "お題をみんなで描いて、AI審査員が採点するパーティーゲーム",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFD54A",
+  "theme_color": "#FFD54A",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
