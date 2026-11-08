@@ -685,7 +685,7 @@ function makeRelaySample(url) {
     } catch (e) { if (opt.signal && opt.signal.aborted) throw e; throw { code: 'network' }; }
     let d = null; try { d = await r.json(); } catch (e) {}
     if (r.status === 429) throw { code: d && d.error === 'quota' ? 'quota' : 'rate_limited' };
-    if (!r.ok || !d || !d.text) throw { code: 'server' };
+    if (!r.ok || !d || !d.text) throw { code: 'server', detail: (d && d.error ? d.error : 'no_body') + (d && d.status ? ' ' + d.status : '') + ' / HTTP ' + r.status };
     return { text: d.text, truncated: !!d.truncated };
   };
 }
@@ -1004,7 +1004,7 @@ function judgeError(err, retry = runJudging, skip = skipRound) {
   const canVote = code === 'quota' && S.mode === 'battle' && S.players.length >= 2;
   const msg = code === 'quota' ? 'AIの無料枠が尽きました。時間をおくと回復します。今回はAIなしで、みんなの投票で決めることもできます。'
     : code === 'network' ? 'ネットワークに接続できませんでした。電波のよい場所でもう一度試してください。'
-    : code === 'server' ? '審査サーバーでエラーが起きました。少し待ってからもう一度試してください。'
+    : code === 'server' ? '審査サーバーでエラーが起きました。少し待ってからもう一度試してください。' + (err.detail ? '（' + err.detail + '）' : '')
     : code === 'not_granted' ? 'AI審査の許可が出ませんでした。もう一度ボタンを押して、許可してください。'
     : code === 'rate_limited' ? '審査員が混み合っています。少し待ってからもう一度押してください。'
     : code === 'timeout' ? '審査に時間がかかりすぎました。もう一度試してください。'
