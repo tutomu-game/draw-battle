@@ -97,6 +97,23 @@
     const uid = auth.currentUser ? auth.currentUser.uid : (await F.signInAnonymously(auth)).user.uid;
     const db = F.initializeFirestore(app, { ignoreUndefinedProperties: true, experimentalAutoDetectLongPolling: true });
     const dbApi = makeDb(F, db);
+    // Googleアカウントとの連携(端末をまたいだ引き継ぎ用)
+    window.__fbAuth = {
+      info: () => { const u = auth.currentUser; const pd = (u && u.providerData && u.providerData[0]) || null; return { anonymous: !!(u && u.isAnonymous), email: pd ? (pd.email || '') : '' }; },
+      async connectGoogle() {
+        const provider = new F.GoogleAuthProvider();
+        try { await F.linkWithPopup(auth.currentUser, provider); return 'linked'; }
+        catch (e) {
+          if (e && (e.code === 'auth/credential-already-in-use' || e.code === 'auth/email-already-in-use')) {
+            const cred = F.GoogleAuthProvider.credentialFromError(e);
+            if (!cred) throw e;
+            await F.signInWithCredential(auth, cred);
+            return 'switched';
+          }
+          throw e;
+        }
+      }
+    };
     const room = makeRoom(F, db, uid);
     return {
       use: async name => name === 'db' ? dbApi
