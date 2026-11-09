@@ -4,6 +4,38 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function isHost(code) { return get(/databases/$(database)/documents/games/$(code)).data.host == request.auth.uid; }
 
+    // 日本時間の今日(YYYY-MM-DD)
+    function jstDate() {
+      let t = request.time + duration.value(9, 'h');
+      return string(t.year()) + '-' + (t.month() < 10 ? '0' : '') + string(t.month()) + '-' + (t.day() < 10 ? '0' : '') + string(t.day());
+    }
+    // XPからランクを求める
+    function lvOf(x) {
+      return x >= 14000 ? 15 : x >= 11000 ? 14 : x >= 8500 ? 13 : x >= 6500 ? 12 : x >= 4900 ? 11 : x >= 3600 ? 10
+           : x >= 2600 ? 9 : x >= 1800 ? 8 : x >= 1200 ? 7 : x >= 800 ? 6 : x >= 500 ? 5 : x >= 300 ? 4 : x >= 150 ? 3 : x >= 50 ? 2 : 1;
+    }
+    function gDayGain(o, n) { return (n.day == jstDate() && o.day != n.day) ? 1 : 0; }
+    function gLvGain(o, n) {
+      return (n.lvg > o.lvg
+              && n.lvg <= lvOf(get(/databases/$(database)/documents/players/$(request.auth.uid)).data.get('xp', 0)))
+             ? n.lvg - o.lvg : 0;
+    }
+    function gBase(o, n) {
+      return n.tix is int && n.tix >= 0 && n.tix <= 10
+          && n.shards is int && n.shards >= 0 && n.shards <= 100000
+          && n.own is list && n.own.size() <= 60
+          && n.pulls is int && n.pulls >= o.pulls && n.pulls - o.pulls <= 10
+          && n.hx is int && n.hx >= 0 && n.hx <= 20
+          && n.gifts is list && n.gifts.size() <= 200
+          && n.day is string && n.lvg is int && n.lvg >= o.lvg;
+    }
+    // ひいた回数ぶんだけ券が減り、ボーナス・カケラは1回ごとの上限まで
+    function gPullOk(o, n, extraTix, extraShards) {
+      return n.tix + (n.pulls - o.pulls) <= o.tix + gDayGain(o, n) + gLvGain(o, n) + extraTix
+          && n.hx <= o.hx + (n.pulls - o.pulls)
+          && n.shards <= o.shards + 150 * (n.pulls - o.pulls) + extraShards;
+    }
+
     // ハートの現在値(時間回復ぶんを含む)
     function heartEff(d, t) {
       let e = d.get('hp', 5) + math.floor((t - d.get('hpAt', 0)) / 1800000);
@@ -85,6 +117,30 @@ service cloud.firestore {
         && date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
         && request.resource.data.score is number
         && request.resource.data.score >= 0 && request.resource.data.score <= 30;
+    }
+    // ガチャ: 本人だけ。券は「毎日1枚・ランクアップ・運営プレゼント」でしか増やせない
+    match /gacha/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.tix is int && request.resource.data.tix <= 1
+        && request.resource.data.shards == 0 && request.resource.data.pulls == 0 && request.resource.data.hx == 0
+        && request.resource.data.own.size() == 0 && request.resource.data.gifts.size() == 0
+        && (request.resource.data.day == '' || request.resource.data.day == jstDate())
+        && request.resource.data.lvg == 1;
+      allow update: if signedIn() && request.auth.uid == uid
+        && gBase(resource.data, request.resource.data)
+        && ((request.resource.data.gifts.size() == resource.data.gifts.size()
+             && gPullOk(resource.data, request.resource.data, 0, 0))
+          || (request.resource.data.gifts.size() == resource.data.gifts.size() + 1
+             && request.resource.data.gifts.hasAll(resource.data.gifts)
+             && !resource.data.gifts.hasAny([request.resource.data.gifts[request.resource.data.gifts.size() - 1]])
+             && gPullOk(resource.data, request.resource.data,
+                  get(/databases/$(database)/documents/gifts/$(request.resource.data.gifts[request.resource.data.gifts.size() - 1])).data.get('tix', 0),
+                  get(/databases/$(database)/documents/gifts/$(request.resource.data.gifts[request.resource.data.gifts.size() - 1])).data.get('shards', 0))));
+    }
+    // 運営からのプレゼント: 読むだけ(作るのは運営がコンソールから)
+    match /gifts/{id} {
+      allow read: if signedIn();
     }
     match /reports/{id} {
       allow create: if signedIn()

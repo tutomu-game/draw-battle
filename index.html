@@ -196,6 +196,33 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 .hearts{color:#E0391F;letter-spacing:2px;font-size:18px;font-weight:900}
 .hearts .e{color:#b9b9c8}
 .hearts small{color:var(--ink);letter-spacing:0;font-size:12px;font-weight:800;margin-left:6px;opacity:.85}
+.gc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.gc-it{border:3px solid var(--ink);border-radius:12px;background:#fff;aspect-ratio:1;display:grid;place-items:center;align-content:center;font-size:26px;line-height:1.1;text-align:center;cursor:pointer;padding:2px;font-family:inherit;color:var(--ink)}
+.gc-it small{font-size:10px;font-weight:800;display:block}
+.gc-it.lock{opacity:.5;cursor:default}.gc-it.lock .ic{filter:brightness(0) opacity(.4)}
+.gc-it.r-r{border-color:#3C8DFF}.gc-it.r-sr{border-color:#F5B700;box-shadow:0 0 0 2px #FFE58A}.gc-it.r-hr{border-color:#9B4DFF;box-shadow:0 0 8px 2px rgba(155,77,255,.55)}
+.gc-it.r-lr{border:3px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#ff3b30,#ff9500,#ffd60a,#34c759,#2f6bff,#af52de,#ff3b30) border-box}
+.gc-it.r-sec{background:#1B1B2F;color:#FFD23F;border-color:#FFD23F;box-shadow:0 0 10px 2px rgba(255,210,63,.7)}
+.gc-row{display:flex;align-items:center;gap:10px}
+.gc-ov{position:fixed;inset:0;z-index:80;background:rgba(27,27,47,.88);display:grid;place-items:center;text-align:center;color:#fff;padding:20px}
+.gc-cap{font-size:120px;line-height:1;animation:gcShake 1.2s ease-in-out}
+@keyframes gcShake{0%,100%{transform:rotate(0) scale(1)}10%{transform:rotate(-16deg)}25%{transform:rotate(14deg) scale(1.05)}40%{transform:rotate(-18deg)}55%{transform:rotate(16deg) scale(1.1)}70%{transform:rotate(-10deg)}85%{transform:rotate(10deg) scale(1.2)}}
+.gc-flash{position:fixed;inset:0;z-index:81;background:#fff;pointer-events:none;animation:gcFlash .6s ease-out forwards}
+@keyframes gcFlash{0%{opacity:1}100%{opacity:0}}
+.gc-res{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:340px;width:100%}
+.gc-res .big{font-size:96px;line-height:1;animation:invIn .5s cubic-bezier(.2,1.4,.4,1)}
+.gc-res .big .tx{font-size:44px;font-weight:900}
+.gc-rar{font-family:var(--f-display);font-size:28px}
+.fx-buzz{position:fixed;inset:0;z-index:58;pointer-events:none;background:radial-gradient(circle at 50% 45%,rgba(255,90,170,.4),rgba(30,30,110,.75));opacity:0;animation:fxBuzzBg 4s ease forwards}
+@keyframes fxBuzzBg{0%{opacity:0}10%{opacity:1}88%{opacity:1}100%{opacity:0}}
+.buzz-pill{position:fixed;z-index:62;pointer-events:none;background:#fff;color:#1b1b2f;border-radius:999px;padding:6px 14px;font-weight:900;font-size:16px;box-shadow:0 4px 0 rgba(0,0,0,.3);opacity:0;white-space:nowrap;animation:buzzPill 1.7s ease-out var(--del,0s) forwards}
+@keyframes buzzPill{0%{opacity:0;transform:scale(.3) translateY(14px)}12%{opacity:1;transform:scale(1.12)}22%{transform:scale(1)}78%{opacity:1}100%{opacity:0;transform:translateY(-70px)}}
+.buzz-count{position:fixed;inset:0;z-index:63;display:grid;place-content:center;text-align:center;pointer-events:none}
+.buzz-count b{display:block;font-family:var(--f-display);font-weight:400;font-size:min(19vw,92px);color:#fff;text-shadow:0 4px 0 #d6245f,0 0 22px #ff5aa8}
+.buzz-count span{display:block;font-weight:900;font-size:min(7vw,28px);color:#fff;text-shadow:0 2px 6px #000}
+.buzz-final{position:fixed;inset:0;z-index:64;display:grid;place-items:center;pointer-events:none}
+.buzz-final b{font-family:var(--f-display);font-weight:400;font-size:min(16vw,76px);background:linear-gradient(90deg,#ff3b30,#ff9500,#ffd60a,#34c759,#2f6bff,#af52de);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:2px #fff;opacity:0;animation:fxSec 2.2s ease 1.7s forwards}
+@media (prefers-reduced-motion: reduce){.gc-cap,.gc-flash,.gc-res .big,.fx-buzz,.buzz-pill,.buzz-count,.buzz-final{animation:none}.fx-buzz,.buzz-pill,.buzz-final{display:none}}
 .badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:8px;border-radius:999px;background:#E0391F;color:#fff;border:2px solid #fff;font-size:13px;font-weight:900;vertical-align:middle;animation:badgePulse 1.4s ease-in-out infinite}
 .badge[hidden]{display:none}
 @keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
@@ -358,6 +385,7 @@ body.fx-shake{animation:fxShake .45s linear 3}
     </div>
   </section>
   <section id="scr-judge" class="screen center" aria-label="審査"></section>
+  <section id="scr-gacha" class="screen" aria-label="ごほうびカプセル"></section>
   <section id="scr-reg" class="screen" aria-label="プロフィール"></section>
   <section id="scr-online" class="screen" aria-label="オンライン"></section>
   <section id="scr-lobby" class="screen" aria-label="ルーム"></section>
@@ -752,7 +780,9 @@ function renderSetup() {
   const legal = h('p', { style: 'text-align:center;font-size:12px;font-weight:800;opacity:.8' },
     h('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, '利用規約'), ' ・ ', h('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, 'プライバシーポリシー'));
   updateOnlineBadge(onlineBtn);
-  fill(dyn, rankCard(), dailyBtn(), onlineBtn, modeCard, howEl, setup, histBtn, installHint(), legal);
+  setTimeout(gUpdateBadge, 0);
+  const gachaBtn = NET.state === 'ready' ? h('button', { class: 'btn big', type: 'button', onclick: showGacha }, '🎁 ごほうびカプセル', h('span', { class: 'badge', id: 'gacha-badge', hidden: true, 'aria-label': '使える券' })) : null;
+  fill(dyn, rankCard(), dailyBtn(), gachaBtn, onlineBtn, modeCard, howEl, setup, histBtn, installHint(), legal);
   updateAiStatus();
 }
 
@@ -970,8 +1000,8 @@ function fitCanvas() {
 window.addEventListener('resize', () => { if ($('#scr-draw').classList.contains('active')) fitCanvas(); });
 
 /* ---------- ペンの種類 ---------- */
-const PENS = [['normal', '✏️', 'ふつう'], ['rainbow', '🌈', 'レインボー'], ['sparkle', '✨', 'キラキラ'], ['neon', '💡', 'ネオン'], ['crayon', '🖍️', 'クレヨン'], ['marker', '🖊️', 'マーカー']];
-const penOwned = id => true; // あとでガチャの入手状況につなぐ
+const PENS = [['normal', '✏️', 'ふつう', 'n'], ['marker', '🖊️', 'マーカー', 'r'], ['crayon', '🖍️', 'クレヨン', 'r'], ['rainbow', '🌈', 'レインボー', 'sr'], ['sparkle', '✨', 'キラキラ', 'sr'], ['neon', '💡', 'ネオン', 'hr']];
+const penOwned = id => id === 'normal' || gOwned('p_' + id);
 // 色の縛りがあるルールでは、色が増えるペンは使えない
 const penAllowed = id => !(D.rule && ['mono', 'tri'].includes(D.rule.id) && ['rainbow', 'sparkle'].includes(id));
 function tracePath(c, p) {
@@ -1411,6 +1441,7 @@ function heartState() {
 let heartPaidFor = '';
 const heartGameKey = () => (S.online && G.game ? `o_${G.code}_${G.game.gen}` : 'l_' + (S.gameSeq || 0));
 // ハートは「1ゲーム(全ラウンド)で1つ」。今日の1題は使わない
+const heartTotal = () => heartState().eff + (gState().hx || 0);
 const needsHeart = () => S.mode !== 'daily' && heartPaidFor !== heartGameKey();
 const chargeHeart = () => { if (S.mode !== 'daily' && heartPaidFor !== heartGameKey()) { spendHeart(); heartPaidFor = heartGameKey(); } };
 function fmtMs(ms) { const t = Math.ceil(ms / 1000), m = Math.floor(t / 60), sec = t % 60; return m + ':' + String(sec).padStart(2, '0'); }
@@ -1418,10 +1449,12 @@ function heartsEl(withTimer) {
   const st = heartState();
   return h('span', { class: 'hearts', role: 'img', 'aria-label': `審査ハート ${st.eff}個 / ${HEART_MAX}個` },
     '♥'.repeat(st.eff), h('span', { class: 'e' }, '♥'.repeat(HEART_MAX - st.eff)),
+    gState().hx ? h('small', { style: 'color:#E0391F;font-weight:900' }, '＋' + gState().hx) : null,
     withTimer && st.eff < HEART_MAX ? h('small', {}, 'あと' + fmtMs(st.nextMs) + 'で+1') : null);
 }
 function spendHeart() {
-  const st = heartState();
+  const st = heartState(), g = gState();
+  if (g.hx > 0) { gSave({ ...g, hx: g.hx - 1 }); refreshRankCard(); return true; }
   if (st.eff <= 0) return false;
   const now = Date.now(), gained = st.at ? Math.floor((now - st.at) / HEART_MS) : 0;
   const hp = st.eff - 1, at = st.eff >= HEART_MAX ? now : st.at + gained * HEART_MS;
@@ -1441,7 +1474,7 @@ function heartsEmpty(retry) {
   const btn = h('button', { class: canVote ? 'btn' : 'btn primary big', type: 'button', disabled: true, onclick: () => { clearInterval(iv); retry(); } }, 'もう一度審査してもらう');
   const tick = () => {
     const st = heartState();
-    if (st.eff > 0) { timer.textContent = '回復しました！'; btn.disabled = false; clearInterval(iv); }
+    if (heartTotal() > 0) { timer.textContent = '回復しました！'; btn.disabled = false; clearInterval(iv); }
     else timer.textContent = 'あと ' + fmtMs(st.nextMs);
   };
   const iv = setInterval(() => { if (!document.body.contains(timer)) { clearInterval(iv); return; } tick(); }, 1000);
@@ -1461,7 +1494,7 @@ function heartsEmpty(retry) {
 async function runJudging() {
   const c = S.cur;
   const sent = c.drawings.map((d, i) => i).filter(i => !c.drawings[i].blank);
-  if (sent.length && needsHeart() && heartState().eff <= 0) { heartsEmpty(runJudging); return; }
+  if (sent.length && needsHeart() && heartTotal() <= 0) { heartsEmpty(runJudging); return; }
   const stop = judgeLoading();
   let ai = null;
   try {
@@ -1523,10 +1556,10 @@ const STAMPS = [
   ['www', 'www', 'www', 'sr', 'grow', '#2DB55D'], ['torihada', '🥶', '鳥肌', 'sr', 'glow'], ['tensai', '🤯', '天才すぎ', 'sr', 'glow'], ['oshi', '🫶', '推せる', 'sr', 'glow'],
   ['kusa', '草', '草', 'hr', 'grow', '#2DB55D'], ['kami', '👑', '神', 'hr', 'burst'], ['naita', '😭', '泣いた', 'hr', 'rain'],
   ['daisogen', '大草原', '大草原', 'lr', 'screen', '#2DB55D'], ['hyaku', '💯', '100点', 'lr', 'screen', '#E0391F'],
-  ['ryu', '🐉', '龍', 'sec', 'quake', '#FFD23F']
+  ['ryu', '🐉', '龍', 'sec', 'quake', '#FFD23F'], ['buzz', '📈', 'バズった', 'sec', 'buzz', '#FF3D8B']
 ];
 const STAMP_BY = Object.fromEntries(STAMPS.map(d => [d[0], d]));
-const stampOwned = id => true; // あとでガチャの入手状況につなぐ
+const stampOwned = id => { const d = STAMP_BY[id]; return !d || d[3] === 'n' || gOwned(id); };
 let myReact = {};
 const reactKey = () => (G.game ? `${G.game.gen}_${G.game.round}` : '');
 function stampCounts(pi) {
@@ -1575,6 +1608,23 @@ function secretFx(def) {
   setTimeout(() => clearInterval(tr), 3300);
   setTimeout(() => els.forEach(e => e.remove()), 4400);
 }
+function buzzFx(def) {
+  const els = [], add = e => { document.body.append(e); els.push(e); return e; };
+  add(h('div', { class: 'fx-buzz', 'aria-hidden': 'true' }));
+  const num = h('b', {}, '0'), cnt = add(h('div', { class: 'buzz-count', 'aria-hidden': 'true' }, h('div', {}, h('span', {}, '❤ いいね'), num, h('span', {}, '🔥 急上昇 1位'))));
+  add(h('div', { class: 'buzz-final', 'aria-hidden': 'true' }, h('b', {}, 'バズった！！')));
+  const pills = ['❤ 1.2万', '🔁 8,421', '💬 刺さった', '🔥 急上昇', '✨ 最高', '👀 保存した', '🥹 尊い', '😂 ツボ', '🫶 推せる', '📈 トレンド入り'];
+  for (let i = 0; i < 16; i++) {
+    const pl = add(h('div', { class: 'buzz-pill', 'aria-hidden': 'true', style: `left:${8 + Math.random() * 60}vw;top:${10 + Math.random() * 70}vh;--del:${(i * 0.14).toFixed(2)}s` }, pills[i % pills.length]));
+  }
+  const t0 = performance.now(), D = 1800;
+  const step = now => { const k = Math.min(1, (now - t0) / D), v = Math.floor(128000 * (1 - Math.pow(1 - k, 3))); num.textContent = v.toLocaleString('en-US'); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+  for (let i = 0; i < 34; i++) part(Math.random() * innerWidth, innerHeight + 10, ['❤️', '💖', '🧡', '💜'][i % 4], { dy: -(innerHeight + 80), dx: (Math.random() - 0.5) * 80, rot: (Math.random() - 0.5) * 60, size: 22 + Math.random() * 22, sc: 1, dur: 1.8 + Math.random() * 1.2, del: Math.random() * 1.6 });
+  try { navigator.vibrate && navigator.vibrate([60, 40, 60, 40, 160]); } catch (e) {}
+  SND.sfx('win'); setTimeout(() => SND.sfx('win'), 900);
+  setTimeout(() => els.forEach(e => e.remove()), 4200);
+}
 function playStampFx(btn, def) {
   SND.sfx('tap');
   const [, txt, , rar, fx, col] = def;
@@ -1590,6 +1640,7 @@ function playStampFx(btn, def) {
     case 'rain': cls('fx-pop'); rainFx(txt, 18, col, 30); break;
     case 'screen': bigFx(txt, col, true); rainFx(txt === '💯' ? '💯' : 'w', 26, col, 30); if (txt === '💯') for (let i = 0; i < 14; i++) part(innerWidth / 2, innerHeight / 2, ['🎆', '✨', '🎇'][i % 3], { dx: (Math.random() - 0.5) * innerWidth, dy: (Math.random() - 0.5) * innerHeight, rot: 90, sc: 1.6, size: 34, dur: 1.2, del: 0.3 }); break;
     case 'quake': secretFx(def); break;
+    case 'buzz': buzzFx(def); break;
     default: flyEmoji(btn, typeof txt === 'string' ? txt : '');
   }
 }
@@ -1944,7 +1995,8 @@ function startNet() {
   if (NET.started) return;
   NET.started = true;
   const { db, me } = NET, bad = () => {};
-  db.collection('players').onSnapshot(sn => { const m = {}; sn.docs.forEach(d => { m[d.id] = d.data(); }); NET.players = m; refreshOnline(); refreshRankCard(); if (PROFILE) updateChip(); }, bad);
+  startGacha();
+  db.collection('players').onSnapshot(sn => { const m = {}; sn.docs.forEach(d => { m[d.id] = d.data(); }); NET.players = m; refreshOnline(); refreshRankCard(); if (PROFILE) updateChip(); autoGrants(); }, bad);
   db.doc(`data/users/${me}/friends`).onSnapshot(sn => { NET.friends = sn.exists && Array.isArray(sn.data().ids) ? sn.data().ids : []; refreshOnline(); }, bad);
   db.collection('requests').where('to', '==', me).onSnapshot(sn => { NET.reqIn = sn.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.status === 'pending'); notifyNewRequests(); updateOnlineBadge(); refreshOnline(); }, bad);
   db.collection('requests').where('from', '==', me).onSnapshot(sn => { NET.reqOut = sn.docs.map(d => ({ id: d.id, ...d.data() })); handleAccepted(); refreshOnline(); }, bad);
@@ -2411,7 +2463,7 @@ function renderWaitDrawings() {
 async function hostJudge(retry) {
   const d = G.game;
   if (G.judging && !retry) return;
-  if (needsHeart() && heartState().eff <= 0) { go('judge'); heartsEmpty(() => hostJudge(true)); return; }
+  if (needsHeart() && heartTotal() <= 0) { go('judge'); heartsEmpty(() => hostJudge(true)); return; }
   G.judging = true;
   if (!retry) await gameUpdate({ phase: 'judging' });
   S.cur.drawings = d.order.map(u => {
@@ -2660,6 +2712,164 @@ function rankCard() {
 setInterval(() => { if ($('#rank-card') && $('#scr-title').classList.contains('active')) refreshRankCard(); }, 15000);
 function refreshRankCard() { const c = $('#rank-card'); if (c && PROFILE) c.replaceChildren(...rankCardKids()); }
 
+/* ---------- ガチャ(ごほうびカプセル) ---------- */
+const G_RATE = [['miss', 40], ['r', 30], ['sr', 17], ['hr', 8], ['lr', 4], ['sec', 1]];
+const DUP_SHARDS = { r: 3, sr: 8, hr: 20, lr: 50, sec: 130 };
+const SWAP_COST = { r: 10, sr: 25, hr: 60, lr: 150, sec: 400 };
+const MAX_TIX = 10;
+const RAR_ORDER = ['r', 'sr', 'hr', 'lr', 'sec'];
+const RAR_STAR = { r: '★ レア', sr: '★★ スーパーレア', hr: '★★★ ハイパーレア', lr: '★★★★ レジェンドレア', sec: '？？？ シークレット' };
+const RAR_COL = { r: '#6FB1FF', sr: '#FFC933', hr: '#C28BFF', lr: '#FF8A3D', sec: '#FFD23F' };
+const GDEF = () => ({ tix: 0, shards: 0, own: [], day: '', lvg: 1, gifts: [], pulls: 0, hx: 0 });
+let dbgKind = null, gTab = 'zukan';
+function gItems() {
+  return [
+    ...STAMPS.filter(d => d[3] !== 'n').map(d => ({ id: d[0], kind: 'stamp', rar: d[3], name: d[2], disp: d[1], def: d })),
+    ...PENS.filter(p => p[3] !== 'n').map(p => ({ id: 'p_' + p[0], kind: 'pen', rar: p[3], name: p[2] + 'ペン', disp: p[1] }))
+  ].sort((a, b) => RAR_ORDER.indexOf(a.rar) - RAR_ORDER.indexOf(b.rar));
+}
+const gState = () => ({ ...GDEF(), ...(NET.gacha || {}) });
+const gOwned = id => gState().own.includes(id);
+function gSave(next) {
+  NET.gacha = next; NET.gachaExists = true;
+  if (NET.state === 'ready') pushing = pushing.then(() => NET.db.doc('gacha/' + NET.me).set(next)).catch(() => {});
+  gUpdateBadge();
+}
+function giftsAvail() {
+  const g = gState();
+  return (NET.gifts || []).filter(x => !g.gifts.includes(x.id) && (!x.until || x.until > Date.now()));
+}
+function gUpdateBadge() {
+  const n = gState().tix + giftsAvail().length;
+  document.querySelectorAll('#gacha-badge').forEach(b => { b.textContent = String(n); b.hidden = !n; });
+}
+function startGacha() {
+  if (NET.gachaStarted || NET.state !== 'ready') return;
+  NET.gachaStarted = true;
+  NET.db.doc('gacha/' + NET.me).onSnapshot(sn => {
+    NET.gachaExists = sn.exists; NET.gacha = sn.exists ? sn.data() : null; NET.gachaLoaded = true;
+    gUpdateBadge(); autoGrants();
+    if ($('#scr-gacha').classList.contains('active') && !document.querySelector('.gc-ov')) renderGacha();
+  }, () => {});
+  NET.db.collection('gifts').get().then(sn => { NET.gifts = sn.docs.map(d => ({ id: d.id, ...d.data() })); gUpdateBadge(); }).catch(() => {});
+}
+// 毎日1枚・ランクアップで1枚を自動で受け取る
+function autoGrants() {
+  if (NET.state !== 'ready' || !PROFILE || !NET.gachaLoaded) return;
+  const g = gState(), day = todayJST(), nx = { ...g }, got = [];
+  if (g.day !== day && nx.tix < MAX_TIX) { nx.day = day; nx.tix++; got.push('今日のガチャ券'); }
+  const lv = rankOf(cloudXp(NET.me)).lv;
+  if (NET.gachaExists && NET.players[NET.me] && lv > g.lvg) {
+    const can = Math.min(lv - g.lvg, MAX_TIX - nx.tix);
+    if (can > 0) { nx.lvg = g.lvg + can; nx.tix += can; got.push(`ランクアップ券×${can}`); }
+  }
+  if (!got.length) return;
+  gSave(nx);
+  showToast('🎁 ' + got.join('・') + 'をもらいました', 'ひく', showGacha);
+}
+function rollKind() {
+  if (dbgKind) return dbgKind;
+  const r = Math.random() * 100; let acc = 0;
+  for (const [k, p] of G_RATE) { acc += p; if (r < acc) return k; }
+  return 'miss';
+}
+function doPull() {
+  const g = gState();
+  if (g.tix < 1) return null;
+  const kind = rollKind(), nx = { ...g, tix: g.tix - 1, pulls: g.pulls + 1 };
+  let res;
+  if (kind === 'miss') { nx.hx = Math.min(20, g.hx + 1); nx.shards = g.shards + 2; res = { kind }; }
+  else {
+    const pool = gItems().filter(i => i.rar === kind), it = pool[Math.floor(Math.random() * pool.length)];
+    if (g.own.includes(it.id)) { const sh = DUP_SHARDS[kind]; nx.shards = g.shards + sh; res = { kind, item: it, dup: true, shards: sh }; }
+    else { nx.own = [...g.own, it.id]; res = { kind, item: it, dup: false }; }
+  }
+  gSave(nx);
+  return res;
+}
+function swapItem(it) {
+  const g = gState(), cost = SWAP_COST[it.rar];
+  if (g.own.includes(it.id) || g.shards < cost) return false;
+  gSave({ ...g, shards: g.shards - cost, own: [...g.own, it.id] });
+  return true;
+}
+function claimGift(gf) {
+  const g = gState(); if (g.gifts.includes(gf.id)) return;
+  const tix = Math.min(gf.tix || 0, MAX_TIX - g.tix);
+  gSave({ ...g, gifts: [...g.gifts, gf.id], tix: g.tix + tix, shards: g.shards + Math.max(0, gf.shards || 0) });
+  showToast('🎁 受け取りました！' + (tix < (gf.tix || 0) ? '（券は上限の10枚まで）' : ''));
+  renderGacha();
+}
+function itemIcon(it) { return it.kind === 'stamp' ? stampLabel(it.def) : it.disp; }
+function showGacha() {
+  if (!PROFILE) { showReg(false); return; }
+  renderGacha(); go('gacha'); SND.bgm('menu');
+}
+function previewFx(def) {
+  const dm = h('span', { 'aria-hidden': 'true', style: 'position:fixed;left:50%;top:60%;width:1px;height:1px' });
+  document.body.append(dm); playStampFx(dm, def); setTimeout(() => dm.remove(), 600);
+}
+function renderGacha(tab) {
+  if (tab) gTab = tab;
+  const g = gState(), items = gItems(), gifts = giftsAvail();
+  const own = it => g.own.includes(it.id);
+  const grid = h('div', { class: 'gc-grid' }, items.map(it => {
+    const o = own(it), hidden = !o && it.rar === 'sec';
+    return h('button', { class: 'gc-it r-' + it.rar + (o ? '' : ' lock'), type: 'button', 'aria-label': (o ? it.name : '未入手') + '（' + RAR_STAR[it.rar] + '）',
+      onclick: () => { if (o && it.kind === 'stamp') previewFx(it.def); } },
+      h('span', { class: 'ic' }, hidden ? '？' : itemIcon(it)), h('small', {}, o ? it.name : hidden ? '？？？' : '？'));
+  }));
+  const swap = h('div', { class: 'stack' }, h('small', { style: 'font-weight:800' }, 'ダブりやハズレで貯まったカケラで、好きなものと交換できます。'),
+    items.filter(it => !own(it)).length ? items.filter(it => !own(it)).map(it => {
+      const cost = SWAP_COST[it.rar];
+      return h('div', { class: 'gc-row' }, h('span', { style: 'font-size:26px;width:44px;text-align:center' }, itemIcon(it)),
+        h('div', { style: 'flex:1' }, h('b', {}, it.name), h('br'), h('small', { style: 'font-weight:800;opacity:.8' }, RAR_STAR[it.rar])),
+        h('button', { class: 'btn small', type: 'button', disabled: g.shards < cost, onclick: () => { if (swapItem(it)) { showToast(it.name + 'を手に入れました！'); renderGacha(); } } }, '💎' + cost));
+    }) : h('p', { style: 'font-weight:800' }, '🎉 すべて手に入れました！'));
+  const tabs = h('div', { class: 'seg', role: 'group', 'aria-label': '表示' },
+    h('button', { type: 'button', 'aria-pressed': String(gTab === 'zukan'), onclick: () => renderGacha('zukan') }, `図鑑 ${items.filter(own).length}/${items.length}`),
+    h('button', { type: 'button', 'aria-pressed': String(gTab === 'swap'), onclick: () => renderGacha('swap') }, 'カケラ交換'));
+  fill($('#scr-gacha'),
+    h('div', { class: 'row2', style: 'align-items:center' }, h('button', { class: 'btn small', type: 'button', onclick: () => { renderTitle(); go('title'); } }, '← もどる'),
+      h('h2', { style: 'margin:0 auto;font-size:22px' }, '🎁 ごほうびカプセル')),
+    h('div', { class: 'card stack', style: 'text-align:center' },
+      h('div', { style: 'display:flex;justify-content:space-around;font-weight:900;font-size:17px' },
+        h('span', {}, '🎟 券 ', h('b', {}, '×' + g.tix)), h('span', {}, '💎 カケラ ', h('b', {}, '×' + g.shards)), h('span', {}, '♥ ボーナス ', h('b', {}, '×' + g.hx))),
+      h('button', { class: 'btn primary big', type: 'button', disabled: g.tix < 1, onclick: pullUI }, g.tix < 1 ? '券がありません' : 'カプセルをひく（券1枚）'),
+      h('small', { style: 'font-weight:800;opacity:.85' }, '券は、毎日1枚と、ランクアップごとにもらえます（最大10枚）')),
+    ...gifts.map(gf => h('div', { class: 'card stack', style: 'text-align:center;background:#FFF3C4' },
+      h('b', {}, '🎁 運営からのプレゼント'), h('p', { style: 'font-weight:800' }, gf.title || ''), gf.msg ? h('small', { style: 'font-weight:700' }, gf.msg) : null,
+      h('button', { class: 'btn primary', type: 'button', onclick: () => claimGift(gf) }, '受け取る'))),
+    tabs, gTab === 'zukan' ? grid : swap);
+}
+function pullUI() {
+  const res = doPull();
+  if (!res) return;
+  const ov = h('div', { class: 'gc-ov', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'カプセル' }, h('div', { class: 'gc-cap', 'aria-hidden': 'true' }, '🎁'));
+  document.body.append(ov);
+  SND.sfx('tap'); try { navigator.vibrate && navigator.vibrate([40, 30, 40]); } catch (e) {}
+  const delay = reduceMotion() ? 200 : 1250;
+  setTimeout(() => {
+    const flash = h('div', { class: 'gc-flash', 'aria-hidden': 'true' }); document.body.append(flash); setTimeout(() => flash.remove(), 700);
+    const again = gState().tix > 0;
+    const close = () => { ov.remove(); renderGacha(); gUpdateBadge(); };
+    let body;
+    if (res.kind === 'miss') {
+      SND.sfx('tap');
+      body = [h('div', { class: 'big', 'aria-hidden': 'true' }, '💨'), h('div', { class: 'gc-rar' }, 'ハズレ…'), h('p', { style: 'font-weight:800' }, 'でも、♥ボーナス ＋1 と、💎カケラ ＋2 をゲット！')];
+    } else {
+      const it = res.item;
+      SND.sfx(['lr', 'sec', 'hr'].includes(res.kind) ? 'win' : 'tap');
+      body = [h('div', { class: 'gc-rar', style: `color:${RAR_COL[res.kind]}` }, RAR_STAR[res.kind] + '！'), h('div', { class: 'big' }, itemIcon(it)), h('b', { style: 'font-size:22px' }, it.name),
+        res.dup ? h('p', { style: 'font-weight:800' }, 'ダブり！ 💎カケラ ＋' + res.shards + ' になりました') : h('p', { style: 'font-weight:800' }, '新しく手に入れました！')];
+      if (it.kind === 'stamp') setTimeout(() => previewFx(it.def), 250);
+    }
+    ov.replaceChildren(h('div', { class: 'gc-res' }, ...body,
+      h('div', { class: 'row2', style: 'width:100%;gap:8px' }, h('button', { class: 'btn', type: 'button', onclick: close }, 'とじる'),
+        again ? h('button', { class: 'btn primary', type: 'button', onclick: () => { ov.remove(); pullUI(); } }, 'もう1回') : null)));
+  }, delay);
+}
+
 /* ---------- 通報・ブロック ---------- */
 function getBlocked() { try { return JSON.parse(localStorage.getItem('dbBlocked') || '{}') || {}; } catch (e) { return {}; } }
 function setBlocked(o) { try { localStorage.setItem('dbBlocked', JSON.stringify(o)); } catch (e) {} }
@@ -2724,7 +2934,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
 
-if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
+if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
 
 function boot(saved) {
   if (saved && typeof saved === 'object') {
