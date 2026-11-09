@@ -1,7 +1,7 @@
-// お絵描きバトル Service Worker
+// らくがきAI Service Worker
 // 方針: ページ本体は「ネット優先」(更新がすぐ届く)、つながらない時だけ保存済みを使う。
 // AI中継(Cloudflare)とFirebase(通信)は一切キャッシュしない。
-const CACHE = 'draw-battle-v4';
+const CACHE = 'draw-battle-v5';
 const SHELL = ['./', 'index.html', 'config.js', 'fb-shim.js', 'events.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {

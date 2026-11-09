@@ -1,4 +1,4 @@
-// お絵描きバトル: Gemini 中継 (Cloudflare Worker)
+// らくがきAI: Gemini 中継 (Cloudflare Worker)
 // APIキーはここ(環境変数 GEMINI_API_KEY)にだけ置く。ブラウザには渡さない。
 const MAX_IMAGES = 4;
 const MAX_BODY = 2_500_000; // bytes

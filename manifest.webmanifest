@@ -1,6 +1,6 @@
 {
-  "name": "お絵描きバトル",
-  "short_name": "お絵描き",
+  "name": "らくがきAI",
+  "short_name": "らくがきAI",
   "description": "お題をみんなで描いて、AI審査員が採点するパーティーゲーム",
   "lang": "ja",
   "start_url": "./",

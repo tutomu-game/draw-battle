@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>お絵描きバトル</title>
+<title>らくがきAI</title>
 <meta name="theme-color" content="#FFD54A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="お絵描き">
+<meta name="apple-mobile-web-app-title" content="らくがきAI">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -129,6 +129,7 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 /* title */
 .logo{display:flex;flex-direction:column;align-items:center;gap:6px;margin:6px 0 0;font-family:var(--f-display);font-weight:400}
 .logo .row{display:flex;gap:6px}
+.logo-sub{margin:2px 0 4px;text-align:center;font-weight:900;font-size:14px;letter-spacing:.04em}
 .lc{display:grid;place-items:center;width:56px;height:64px;font-size:36px;border:3px solid var(--ink);border-radius:14px;box-shadow:var(--shadow);transform:rotate(var(--r,0deg));animation:drop .6s cubic-bezier(.2,1.5,.4,1) both;animation-delay:var(--d)}
 .logo .row.b .lc{width:68px;height:76px;font-size:44px}
 .lc0{background:var(--pink)}.lc1{background:var(--blue);color:#fff}.lc2{background:var(--green)}.lc3{background:var(--orange)}
@@ -755,8 +756,8 @@ function renderTitle() {
     titleBuilt = true;
     const mk = (txt, base, big) => h('div', { class: 'row' + (big ? ' b' : '') },
       [...txt].map((c, i) => h('span', { class: 'lc lc' + ((i + base) % 4), style: `--d:${(i + base) * 80}ms;--r:${[-4, 3, -2, 4, -3, 2, -4][(i + base) % 7]}deg`, 'aria-hidden': 'true' }, c)));
-    const logo = h('h1', { class: 'logo', 'aria-label': 'お絵描きバトル' }, mk('お絵描き', 0), mk('バトル', 4, true));
-    fill(el, logo, h('div', { id: 'title-dyn', class: 'stack' }));
+    const logo = h('h1', { class: 'logo', 'aria-label': 'らくがきAI' }, mk('らくがき', 0), mk('AI', 4, true));
+    fill(el, logo, h('p', { class: 'logo-sub' }, 'AIが採点する らくがき対決'), h('div', { id: 'title-dyn', class: 'stack' }));
   }
   renderHome();
 }
@@ -2158,7 +2159,7 @@ let pfBusy = false;
 function inviteLink(code) { return location.origin + location.pathname + '?f=' + code; }
 function shareInviteLink(code) {
   const url = inviteLink(code);
-  if (navigator.share) navigator.share({ title: 'お絵描きバトル', text: 'いっしょに絵で対戦しよう！友達になるとガチャ券がもらえるよ', url }).catch(() => {});
+  if (navigator.share) navigator.share({ title: 'らくがきAI', text: 'いっしょに絵で対戦しよう！友達になるとガチャ券がもらえるよ', url }).catch(() => {});
   else copyText(url);
 }
 function processPendingFriend() {
