@@ -193,7 +193,8 @@ service cloud.firestore {
         && request.resource.data.by == request.auth.uid
         && request.resource.data.target is string
         && request.resource.data.reason is string
-        && request.resource.data.reason.size() < 100;
+        && request.resource.data.reason.size() < 100
+        && (!('img' in request.resource.data) || (request.resource.data.img is string && request.resource.data.img.size() < 300000));
     }
     match /dailyImg/{id} {
       allow read: if signedIn();
