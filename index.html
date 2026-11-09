@@ -214,7 +214,30 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 .rhead{display:flex;gap:10px;align-items:flex-start}
 .speech{position:relative;flex:1;background:var(--paper);border:3px solid var(--ink);border-radius:16px;padding:8px 12px;font-size:14px;font-weight:800;line-height:1.45}
 .rcard{position:relative;background:var(--paper);border:3px solid var(--ink);border-radius:20px;box-shadow:var(--shadow);padding:12px;margin-top:6px;opacity:0;animation:cardIn .45s cubic-bezier(.2,1.4,.4,1) forwards;animation-delay:calc(var(--i)*240ms + 150ms)}
-.stamps{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.stamps{display:flex;flex-wrap:nowrap;gap:6px;margin-top:10px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:thin}
+.stp{flex:none}
+.stp.r-r{border-color:#3C8DFF}
+.stp.r-sr{border-color:#F5B700;box-shadow:0 0 0 2px #FFE58A}
+.stp.r-hr{border-color:#9B4DFF;box-shadow:0 0 8px 2px rgba(155,77,255,.55)}
+.stp.r-lr{border:3px solid transparent;background:linear-gradient(#fff,#fff) padding-box,linear-gradient(90deg,#ff3b30,#ff9500,#ffd60a,#34c759,#2f6bff,#af52de,#ff3b30) border-box;box-shadow:0 0 10px 2px rgba(255,200,0,.6)}
+.stp.r-sec{background:#1B1B2F;color:#FFD23F;border-color:#FFD23F;box-shadow:0 0 12px 3px rgba(255,210,63,.75);animation:secGlow 1.6s ease-in-out infinite}
+.stp.r-sec[aria-pressed="true"],.stp.r-lr[aria-pressed="true"],.stp.r-hr[aria-pressed="true"]{background:var(--pink);color:#fff}
+.stp .tx{font-weight:900;font-size:14px;letter-spacing:.5px}
+@keyframes secGlow{0%,100%{box-shadow:0 0 8px 2px rgba(255,210,63,.5)}50%{box-shadow:0 0 18px 6px rgba(255,210,63,.95)}}
+@keyframes stpPop{0%{transform:scale(1)}40%{transform:scale(1.5) rotate(-8deg)}100%{transform:scale(1)}}
+@keyframes stpWob{0%,100%{transform:rotate(0)}20%{transform:rotate(-16deg)}40%{transform:rotate(14deg)}60%{transform:rotate(-9deg)}80%{transform:rotate(6deg)}}
+.stp.fx-pop{animation:stpPop .5s ease-out}
+.stp.fx-wob{animation:stpWob .9s ease-in-out}
+.fx-p{position:fixed;z-index:60;pointer-events:none;font-weight:900;line-height:1;white-space:nowrap;text-shadow:0 2px 0 rgba(255,255,255,.9),0 0 6px rgba(255,255,255,.9);animation:fxPart var(--dur,1s) ease-out var(--del,0s) forwards;opacity:0}
+@keyframes fxPart{0%{opacity:1;transform:translate(0,0) scale(.5) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(var(--sc,1.2)) rotate(var(--rot,0deg))}}
+.fx-big{position:fixed;inset:0;z-index:61;pointer-events:none;display:grid;place-items:center}
+.fx-big span{font-weight:900;text-shadow:0 6px 0 rgba(0,0,0,.25);animation:fxBig 1.8s ease-out forwards}
+@keyframes fxBig{0%{transform:scale(.1) rotate(-25deg);opacity:0}22%{transform:scale(1.15) rotate(5deg);opacity:1}70%{transform:scale(1) rotate(0);opacity:1}100%{transform:scale(1.6);opacity:0}}
+.fx-flash{position:fixed;inset:0;z-index:59;pointer-events:none;border:10px solid #ff3b30;animation:fxFlash 1.6s linear forwards}
+@keyframes fxFlash{0%{opacity:0;filter:hue-rotate(0)}15%{opacity:1}100%{opacity:0;filter:hue-rotate(360deg)}}
+body.fx-shake{animation:fxShake .45s linear 3}
+@keyframes fxShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(6px,-4px)}60%{transform:translate(-5px,-3px)}80%{transform:translate(5px,4px)}}
+@media (prefers-reduced-motion: reduce){.fx-p,.fx-big,.fx-flash{display:none}.stp.fx-pop,.stp.fx-wob,.stp.r-sec{animation:none}body.fx-shake{animation:none}}
 .stp{display:inline-flex;align-items:center;gap:4px;border:2.5px solid var(--ink);border-radius:999px;background:#fff;padding:3px 9px;font-size:18px;line-height:1.3;cursor:pointer;touch-action:manipulation;color:var(--ink);font-family:inherit}
 .stp .ct{font-family:var(--f-display);font-size:13px}
 .stp .ct:empty{display:none}
@@ -1405,7 +1428,18 @@ function ranks(totals) {
 
 
 /* ---------- スタンプ(リアクション) ---------- */
-const STAMPS = [['like', '👍', 'いいね'], ['lol', '😂', 'わらった'], ['love', '😍', 'すき'], ['wow', '😱', 'びっくり'], ['clap', '👏', 'すごい'], ['fire', '🔥', 'あつい']];
+const RAR = { n: 'ノーマル', r: 'レア', sr: 'スーパーレア', hr: 'ハイパーレア', lr: 'レジェンドレア', sec: 'シークレット' };
+// [id, 表示, ラベル, レア度, 動き, 文字色]
+const STAMPS = [
+  ['like', '👍', 'いいね', 'n', 'fly'], ['lol', '😂', 'わらった', 'n', 'fly'], ['love', '😍', 'すき', 'n', 'fly'], ['wow', '😱', 'びっくり', 'n', 'fly'], ['clap', '👏', 'すごい', 'n', 'fly'], ['fire', '🔥', 'あつい', 'n', 'fly'],
+  ['w', 'w', 'w', 'r', 'wob', '#2DB55D'], ['toutoi', '🥹', '尊い', 'r', 'pop'], ['gachi', 'ガチ', 'ガチ', 'r', 'pop', '#E0391F'], ['sorena', 'それな', 'それな', 'r', 'wob', '#2F6BFF'],
+  ['www', 'www', 'www', 'sr', 'grow', '#2DB55D'], ['torihada', '🥶', '鳥肌', 'sr', 'glow'], ['tensai', '🤯', '天才すぎ', 'sr', 'glow'], ['oshi', '🫶', '推せる', 'sr', 'glow'],
+  ['kusa', '草', '草', 'hr', 'grow', '#2DB55D'], ['kami', '👑', '神', 'hr', 'burst'], ['naita', '😭', '泣いた', 'hr', 'rain'],
+  ['daisogen', '大草原', '大草原', 'lr', 'screen', '#2DB55D'], ['hyaku', '💯', '100点', 'lr', 'screen', '#E0391F'],
+  ['ryu', '🐉', '龍', 'sec', 'quake', '#FFD23F']
+];
+const STAMP_BY = Object.fromEntries(STAMPS.map(d => [d[0], d]));
+const stampOwned = id => true; // あとでガチャの入手状況につなぐ
 let myReact = {};
 const reactKey = () => (G.game ? `${G.game.gen}_${G.game.round}` : '');
 function stampCounts(pi) {
@@ -1421,15 +1455,56 @@ function stampCounts(pi) {
   }
   return out;
 }
+const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+function stampLabel(def) {
+  const isText = /[A-Za-z぀-ヿ一-鿿]/.test(def[1]);
+  return isText ? h('span', { class: 'tx', style: def[5] ? `color:${def[5]}` : '' }, def[1]) : def[1];
+}
+function part(x, y, txt, o = {}) {
+  const el = h('span', { class: 'fx-p', 'aria-hidden': 'true', style: `left:${x}px;top:${y}px;font-size:${o.size || 26}px;color:${o.color || 'inherit'};--dx:${o.dx || 0}px;--dy:${o.dy || -80}px;--rot:${o.rot || 0}deg;--sc:${o.sc || 1.2};--dur:${o.dur || 1}s;--del:${o.del || 0}s` }, txt);
+  document.body.append(el); setTimeout(() => el.remove(), ((o.dur || 1) + (o.del || 0)) * 1000 + 100);
+}
+function bigFx(txt, color, flash) {
+  const len = [...txt].length;
+  const el = h('div', { class: 'fx-big', 'aria-hidden': 'true' }, h('span', { style: `font-size:${len > 1 ? Math.min(Math.floor(78 / len), 30) + 'vw' : 'min(55vw,220px)'};color:${color || 'inherit'}` }, txt));
+  document.body.append(el); setTimeout(() => el.remove(), 1900);
+  if (flash) { const f = h('div', { class: 'fx-flash', 'aria-hidden': 'true' }); document.body.append(f); setTimeout(() => f.remove(), 1700); }
+}
+function rainFx(txt, n, color, size) {
+  for (let i = 0; i < n; i++) part(Math.random() * innerWidth, -20 - Math.random() * 60, txt, { dy: innerHeight + 60, dx: (Math.random() - 0.5) * 60, rot: (Math.random() - 0.5) * 80, size: (size || 28) * (0.7 + Math.random() * 0.8), sc: 1, dur: 1.4 + Math.random() * 0.8, del: Math.random() * 0.8, color });
+}
+function shakeFx() { document.body.classList.add('fx-shake'); setTimeout(() => document.body.classList.remove('fx-shake'), 1400); }
+function playStampFx(btn, def) {
+  SND.sfx('tap');
+  const [, txt, , rar, fx, col] = def;
+  const r = btn.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top;
+  if (reduceMotion()) return;
+  const cls = c => { btn.classList.remove('fx-pop', 'fx-wob'); void btn.offsetWidth; btn.classList.add(c); setTimeout(() => btn.classList.remove(c), 1000); };
+  switch (fx) {
+    case 'pop': cls('fx-pop'); part(cx - 12, cy - 6, txt, { dy: -110, sc: 2, size: 30, color: col }); break;
+    case 'wob': cls('fx-wob'); for (let i = 0; i < 4; i++) part(cx - 10 + (Math.random() * 40 - 20), cy - 6, txt, { dy: -90 - Math.random() * 40, dx: (Math.random() - 0.5) * 60, rot: (Math.random() - 0.5) * 60, sc: 1.5, size: 28, del: i * 0.12, color: col }); break;
+    case 'grow': for (let i = 0; i < 7; i++) part(cx - 40 + i * 14, cy - 6, txt, { dy: -80 - i * 14, dx: (i - 3) * 6, rot: (i % 2 ? 1 : -1) * 12, sc: 1 + i * 0.3, size: 16 + i * 3, del: i * 0.13, dur: 1, color: col }); break;
+    case 'glow': cls('fx-pop'); for (let i = 0; i < 9; i++) { const a = (i / 9) * Math.PI * 2; part(cx - 12, cy + 10, txt, { dx: Math.cos(a) * 90, dy: Math.sin(a) * 90 - 20, rot: 120, sc: 1.4, size: 24, dur: 0.9 }); } break;
+    case 'burst': cls('fx-pop'); for (let i = 0; i < 16; i++) { const a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 90; part(cx - 10, cy + 10, ['✨', txt, '🎉', '⭐'][i % 4], { dx: Math.cos(a) * d, dy: Math.sin(a) * d - 40, rot: Math.random() * 360, sc: 1.4, size: 22 + Math.random() * 12, dur: 1.1 }); } break;
+    case 'rain': cls('fx-pop'); rainFx(txt, 18, col, 30); break;
+    case 'screen': bigFx(txt, col, true); rainFx(txt === '💯' ? '💯' : 'w', 26, col, 30); if (txt === '💯') for (let i = 0; i < 14; i++) part(innerWidth / 2, innerHeight / 2, ['🎆', '✨', '🎇'][i % 3], { dx: (Math.random() - 0.5) * innerWidth, dy: (Math.random() - 0.5) * innerHeight, rot: 90, sc: 1.6, size: 34, dur: 1.2, del: 0.3 }); break;
+    case 'quake': shakeFx(); bigFx(txt, col, true); rainFx('✨', 30, '#FFD23F', 30); rainFx('⭐', 14, '#FFD23F', 34); break;
+    default: flyEmoji(btn, typeof txt === 'string' ? txt : '');
+  }
+}
 function paintStamps(bar) {
   const pi = Number(bar.dataset.pi), counts = stampCounts(pi);
   let mine = [];
   if (S.online && G.game) { const m = myReact[reactKey()]; mine = (m && m[G.game.order[pi]]) || []; }
-  bar.querySelectorAll('.stp').forEach(b => {
-    const id = b.dataset.id, n = counts[id] || 0;
-    b.querySelector('.ct').textContent = n ? String(n) : '';
-    b.setAttribute('aria-pressed', String(mine.includes(id)));
+  const prev = bar._n || null, scroll = bar.scrollLeft;
+  const btns = STAMPS.filter(d => stampOwned(d[0]) || counts[d[0]]).map(d => {
+    const id = d[0], n = counts[id] || 0;
+    return h('button', { class: 'stp r-' + d[3], type: 'button', 'data-id': id, 'data-r': d[3], title: RAR[d[3]], 'aria-label': d[2] + '（' + RAR[d[3]] + '）', 'aria-pressed': String(mine.includes(id)),
+      onclick: e => tapStamp(pi, id, e.currentTarget, d) }, stampLabel(d), h('span', { class: 'ct' }, n ? String(n) : ''));
   });
+  bar.replaceChildren(...btns); bar.scrollLeft = scroll;
+  if (prev) btns.forEach(b => { const id = b.dataset.id; if ((counts[id] || 0) > (prev[id] || 0) && bar._skip !== id) playStampFx(b, STAMP_BY[id]); });
+  bar._skip = null; bar._n = { ...counts };
 }
 function refreshStamps() { document.querySelectorAll('#scr-result .stamps').forEach(paintStamps); }
 function flyEmoji(btn, em) {
@@ -1438,8 +1513,9 @@ function flyEmoji(btn, em) {
   document.body.append(el); setTimeout(() => el.remove(), 1000);
 }
 let rq = Promise.resolve();
-function tapStamp(pi, id, btn, em) {
-  SND.sfx('tap'); flyEmoji(btn, em);
+function tapStamp(pi, id, btn, def) {
+  const bar = btn.closest('.stamps'); if (bar) bar._skip = id;
+  playStampFx(btn, def);
   if (S.online && G.game) {
     const key = reactKey(), uid = G.game.order[pi];
     myReact[key] = myReact[key] || {};
@@ -1456,9 +1532,7 @@ function tapStamp(pi, id, btn, em) {
   refreshStamps();
 }
 function stampBar(pi) {
-  const bar = h('div', { class: 'stamps', 'data-pi': pi, role: 'group', 'aria-label': 'スタンプ' },
-    STAMPS.map(([id, em, label]) => h('button', { class: 'stp', type: 'button', 'data-id': id, 'aria-label': label, 'aria-pressed': 'false',
-      onclick: e => tapStamp(pi, id, e.currentTarget, em) }, em, h('span', { class: 'ct' }))));
+  const bar = h('div', { class: 'stamps', 'data-pi': pi, role: 'group', 'aria-label': 'スタンプ' });
   paintStamps(bar);
   return bar;
 }
