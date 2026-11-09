@@ -344,6 +344,32 @@ body.fx-shake{animation:fxShake .45s linear 3}
 #lightbox[hidden]{display:none}
 #lightbox img{max-width:100%;max-height:100%;background:#fff;border:4px solid var(--ink);border-radius:12px}
 
+
+/* ---- タブ型ホーム ---- */
+#tabbar{display:none;position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--paper);border-top:3px solid var(--ink);padding:0 6px calc(4px + env(safe-area-inset-bottom))}
+#app[data-scr="title"] #tabbar,#app[data-scr="online"] #tabbar,#app[data-scr="gacha"] #tabbar,#app[data-scr="mis"] #tabbar{display:flex}
+#app[data-scr="title"] .screen.active,#app[data-scr="online"] .screen.active,#app[data-scr="gacha"] .screen.active,#app[data-scr="mis"] .screen.active{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+#tabbar .tab{flex:1;position:relative;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:0;padding:7px 0 3px;font-family:var(--f-display);font-size:12px;line-height:1.3;color:var(--ink);cursor:pointer;touch-action:manipulation}
+#tabbar .tab .ic{font-size:25px;line-height:1.15}
+#tabbar .tab .badge{position:absolute;top:1px;right:calc(50% - 32px);margin:0;min-width:20px;height:20px;padding:0 4px;font-size:11px;border-width:2px}
+#app[data-scr="title"] #tab-home,#app[data-scr="online"] #tab-online,#app[data-scr="gacha"] #tab-gacha,#app[data-scr="mis"] #tab-mis{color:#D92B6B}
+#app[data-scr="title"] #tab-home::after,#app[data-scr="online"] #tab-online::after,#app[data-scr="gacha"] #tab-gacha::after,#app[data-scr="mis"] #tab-mis::after{content:"";position:absolute;top:-3px;left:22%;right:22%;height:4px;border-radius:0 0 4px 4px;background:#D92B6B}
+#app[data-net="0"] #tabbar .tab.net{display:none}
+#app[data-scr="title"] .me-chip{max-width:132px}
+.hud{position:absolute;top:8px;right:54px;z-index:4;display:flex;gap:6px}
+.hchip{display:flex;align-items:center;gap:4px;height:38px;padding:0 10px;border:3px solid var(--ink);border-radius:999px;background:var(--paper);box-shadow:3px 3px 0 var(--ink);font-family:var(--f-display);font-size:15px;color:var(--ink);cursor:pointer;touch-action:manipulation}
+.hchip .hr{color:#E0391F}
+.mbig{width:100%;display:flex;align-items:center;gap:14px;padding:11px 16px;text-align:left;cursor:pointer;color:var(--ink);font:inherit;touch-action:manipulation}
+.mbig:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.mbig .mic{width:50px;height:50px;border-radius:15px;background:#fff;border:2.5px solid var(--ink);display:grid;place-items:center;font-size:28px;flex:none}
+.mbig b{display:block;font-family:var(--f-display);font-weight:400;font-size:21px;line-height:1.25}
+.mbig small{font-weight:800;font-size:12px;line-height:1.35;display:block}
+.dcard{width:100%;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;color:var(--ink);font:inherit;padding:10px 14px;touch-action:manipulation}
+.dcard:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.dcard .mic{width:46px;height:46px;border-radius:14px;background:#FFE066;border:2.5px solid var(--ink);display:grid;place-items:center;font-size:24px;flex:none}
+.dcard b{display:block;font-family:var(--f-display);font-weight:400;font-size:17px}
+.dcard small{font-weight:800;font-size:12px}
+
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
   .rcard{opacity:1}
@@ -356,7 +382,7 @@ body.fx-shake{animation:fxShake .45s linear 3}
 </style>
 </head>
 <body>
-<main id="app" data-scr="title">
+<main id="app" data-scr="title" data-net="0">
   <button class="me-chip" id="me-chip" type="button" hidden aria-label="プロフィールを変更"></button>
   <div id="toast" role="status" hidden></div>
   <button class="snd" id="snd" type="button" aria-label="音の切り替え"></button>
@@ -386,6 +412,7 @@ body.fx-shake{animation:fxShake .45s linear 3}
   </section>
   <section id="scr-judge" class="screen center" aria-label="審査"></section>
   <section id="scr-gacha" class="screen" aria-label="ごほうびカプセル"></section>
+  <section id="scr-setup" class="screen" aria-label="あそびかた・せってい"></section>
   <section id="scr-mis" class="screen" aria-label="ミッション"></section>
   <section id="scr-reg" class="screen" aria-label="プロフィール"></section>
   <section id="scr-online" class="screen" aria-label="オンライン"></section>
@@ -393,6 +420,12 @@ body.fx-shake{animation:fxShake .45s linear 3}
   <section id="scr-wait" class="screen center" aria-label="待機"></section>
   <section id="scr-result" class="screen" aria-label="結果"></section>
   <section id="scr-final" class="screen" aria-label="最終結果"></section>
+  <nav id="tabbar" aria-label="メニュー">
+    <button class="tab" id="tab-home" type="button"><span class="ic" aria-hidden="true">🏠</span>ホーム</button>
+    <button class="tab" id="tab-online" type="button"><span class="ic" aria-hidden="true">👫</span>ともだち<span class="badge" id="online-badge" hidden aria-label="未確認のお知らせ"></span></button>
+    <button class="tab net" id="tab-gacha" type="button"><span class="ic" aria-hidden="true">🎁</span>カプセル<span class="badge" id="gacha-badge" hidden aria-label="使える券"></span></button>
+    <button class="tab net" id="tab-mis" type="button"><span class="ic" aria-hidden="true">📋</span>ミッション<span class="badge" id="mis-badge" hidden aria-hidden="true"></span></button>
+  </nav>
 </main>
 <div id="lightbox" hidden><img alt="拡大した絵"></div>
 
@@ -535,6 +568,7 @@ function go(name) {
   document.getElementById('app').dataset.scr = name;
   (S.sfxTimers || []).forEach(clearTimeout); S.sfxTimers = [];
   document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'scr-' + name));
+  document.querySelectorAll('#tabbar .tab').forEach(t => { if (t.id === 'tab-' + (name === 'title' ? 'home' : name)) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current'); });
   const act = $('#scr-' + name);
   if (act) act.scrollTop = 0;
 }
@@ -724,11 +758,10 @@ function renderTitle() {
     const logo = h('h1', { class: 'logo', 'aria-label': 'お絵描きバトル' }, mk('お絵描き', 0), mk('バトル', 4, true));
     fill(el, logo, h('div', { id: 'title-dyn', class: 'stack' }));
   }
-  renderSetup();
+  renderHome();
 }
 
-function renderSetup() {
-  const dyn = $('#title-dyn');
+function renderSetupSheet() {
   const solo = S.mode !== 'battle';
   const how = {
     battle: [['お題が出る', 'みんな同じお題'], ['指で描く', '制限時間つき'], ['AIが採点', '観点は毎回かわる']],
@@ -777,17 +810,41 @@ function renderSetup() {
         seg([[true, 'あり'], [false, 'なし']], SND.st.sfx, v => SND.set('sfx', v), '効果音'))),
     status, start);
 
-  const onlineBtn = h('button', { class: 'btn blue big', type: 'button', onclick: showOnline }, 'オンラインで遊ぶ（友達と）', h('span', { class: 'badge', id: 'online-badge', hidden: true, 'aria-label': '未確認のお知らせ' }));
+  fill($('#scr-setup'),
+    h('div', { class: 'row2', style: 'align-items:center' }, h('button', { class: 'btn small', type: 'button', onclick: () => { renderTitle(); go('title'); } }, '← もどる'),
+      h('h2', { style: 'margin:0 auto;font-size:22px' }, 'あそびかた・せってい')),
+    modeCard, howEl, setup);
+  updateAiStatus();
+}
+
+
+function renderSetup() { if ($('#scr-setup').classList.contains('active')) renderSetupSheet(); else renderHome(); }
+function showSetup() { renderSetupSheet(); go('setup'); SND.bgm('menu'); }
+function updateTabbar() { const a = $('#app'); if (a) a.dataset.net = NET.state === 'ready' ? '1' : '0'; }
+function hudKids() {
+  const st = heartState(), g = gState();
+  return [
+    h('button', { class: 'hchip', type: 'button', 'aria-label': `審査ハート ${st.eff}個`, onclick: () => showToast(st.eff < HEART_MAX ? `ハートは30分ごとに1つ回復します（あと${fmtMs(st.nextMs)}）` : '審査ハートは、AIの採点1ゲームにつき1つ使います') },
+      h('span', { class: 'hr', 'aria-hidden': 'true' }, '♥'), h('b', {}, String(st.eff)), g.hx ? h('small', { class: 'hr', style: 'font-weight:900' }, '＋' + g.hx) : null),
+    NET.state === 'ready' ? h('button', { class: 'hchip', type: 'button', 'aria-label': `ガチャ券 ${g.tix}枚`, onclick: showGacha }, h('span', { 'aria-hidden': 'true' }, '🎟'), h('b', {}, String(g.tix))) : null
+  ];
+}
+function refreshHud() { const el = $('#hud'); if (el) el.replaceChildren(...hudKids().filter(Boolean)); }
+function renderHome() {
+  const dyn = $('#title-dyn');
+  updateTabbar(); updateOnlineBadge();
+  setTimeout(gUpdateBadge, 0); setTimeout(misBadge, 0);
+  const modeBtn = (id, t, desc, col, ic) => h('button', { class: 'card mbig', type: 'button', style: `background:${col}`, onclick: () => { SND.sfx('tap'); S.mode = id; showSetup(); } },
+    h('span', { class: 'mic', 'aria-hidden': 'true' }, ic), h('span', {}, h('b', {}, t), h('small', {}, desc)));
   const histBtn = h('button', { class: 'btn small', type: 'button', style: 'align-self:center', onclick: showHistory }, '📜 せんれき');
   const legal = h('p', { style: 'text-align:center;font-size:12px;font-weight:800;opacity:.8' },
     h('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, '利用規約'), ' ・ ', h('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, 'プライバシーポリシー'));
-  updateOnlineBadge(onlineBtn);
-  setTimeout(gUpdateBadge, 0);
-  const gachaBtn = NET.state === 'ready' ? h('button', { class: 'btn big', type: 'button', onclick: showGacha }, '🎁 ごほうびカプセル', h('span', { class: 'badge', id: 'gacha-badge', hidden: true, 'aria-label': '使える券' })) : null;
-  const misBtn = NET.state === 'ready' ? h('button', { class: 'btn big', type: 'button', onclick: showMis }, '📋 ミッション', h('span', { class: 'badge', id: 'mis-badge', hidden: true, 'aria-hidden': 'true' })) : null;
-  setTimeout(misBadge, 0);
-  fill(dyn, rankCard(), h('div', { id: 'ev-slot' }, eventBanner()), dailyBtn(), gachaBtn, misBtn, onlineBtn, modeCard, howEl, setup, histBtn, installHint(), legal);
-  updateAiStatus();
+  fill(dyn, h('div', { id: 'hud', class: 'hud' }, ...hudKids().filter(Boolean)), rankCard(), h('div', { id: 'ev-slot' }, eventBanner()), dailyBtn(),
+    h('div', { style: 'font-weight:900;font-size:14px;padding-left:4px;margin-top:2px' }, 'あそぶ'),
+    modeBtn('battle', '対戦', '2〜4人で順番に描いて、AIが採点', 'var(--pink)', '👥'),
+    modeBtn('attack', '縛り', 'ひとりで挑戦。毎回ちがう縛りつき', '#FFB347', '⚔️'),
+    modeBtn('guess', '当てろ', 'AIに絵を当てさせる。早いほど高得点', '#7BE0A6', '🎯'),
+    histBtn, installHint(), legal);
 }
 
 function updateAiStatus() {
@@ -1798,7 +1855,7 @@ function finalButtons() {
   }
   return h('div', { class: 'stack', style: 'padding-bottom:8px' },
     h('button', { class: 'btn primary big', type: 'button', onclick: startGame }, 'もう一度あそぶ'),
-    h('button', { class: 'btn', type: 'button', onclick: () => { renderTitle(); go('title'); } }, 'メンバーや設定を変える'));
+    h('button', { class: 'btn', type: 'button', onclick: showSetup }, 'メンバーや設定を変える'));
 }
 
 function soloRank(avg) {
@@ -1836,7 +1893,7 @@ function showFinalSolo() {
     played.length ? h('div', { class: 'card stack' }, h('h2', { style: 'font-size:18px' }, 'みんなの作品'), gallery) : null,
     h('div', { class: 'stack', style: 'padding-bottom:8px' },
       h('button', { class: 'btn primary big', type: 'button', onclick: startGame }, 'もう一度あそぶ'),
-      h('button', { class: 'btn', type: 'button', onclick: () => { renderTitle(); go('title'); } }, 'モードや設定を変える'))
+      h('button', { class: 'btn', type: 'button', onclick: showSetup }, 'モードや設定を変える'))
   );
   go('final');
   SND.bgm('menu');
@@ -2022,6 +2079,7 @@ async function netInit() {
   }
   use('room').then(r => { NET.room = r; if (r && NET.state === 'ready') startRoom(); }).catch(() => {});
   refreshOnline();
+  updateTabbar();
   if ($('#scr-title').classList.contains('active')) renderSetup();
   if (!PROFILE && $('#scr-reg').classList.contains('active') && window.__fbAuth && !($('#reg-name') && $('#reg-name').value)) showReg(false);
 }
@@ -2630,8 +2688,9 @@ const dailyLocal = date => { try { return JSON.parse(localStorage.getItem('dbDai
 function dailyBtn() {
   if (!dailyAvailable()) return null;
   const date = todayJST(), done = dailyLocal(date);
-  return h('button', { class: 'btn big', type: 'button', style: 'background:var(--paper)', onclick: startDaily },
-    done ? `📅 今日の1題（挑戦ずみ ${done.score}点）` : '📅 今日の1題（毎日1回・みんな同じお題）');
+  return h('button', { class: 'card dcard', type: 'button', onclick: startDaily },
+    h('span', { class: 'mic', 'aria-hidden': 'true' }, '📅'),
+    h('span', {}, h('b', {}, '今日の1題'), h('small', {}, done ? `挑戦ずみ ${done.score}点 ・ みんな同じお題` : '毎日1回・みんな同じお題')));
 }
 
 async function startDaily() {
@@ -2775,20 +2834,19 @@ function awardXp(rec) {
 function rankCardKids() {
   const r = rankOf(myXp());
   return [
-    h('div', { class: 'row2', style: 'align-items:center;gap:8px' }, avatar(PROFILE.shape, 30, true),
-      h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:18px' }, 'Lv.' + r.lv + ' ' + r.name)),
-    h('div', { style: 'height:10px;border-radius:6px;background:rgba(27,27,47,.15);overflow:hidden', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(r.pct), 'aria-label': 'ランクの進み具合' },
-      h('div', { style: `height:100%;width:${r.pct}%;background:var(--accent,#FF8A3D)` })),
-    h('div', { style: 'font-weight:800;font-size:13px' }, '審査ハート ', heartsEl(true)),
-    h('small', { style: 'font-weight:800;opacity:.85' }, r.nxt != null ? `${myXp()} XP ・ 次の「${r.nextName}」まであと ${r.nxt - myXp()} XP` : `${myXp()} XP ・ 最高ランク！`)
+    h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:8px' },
+      h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:16px' }, 'Lv.' + r.lv + ' ' + r.name),
+      h('small', { style: 'font-weight:800;opacity:.9' }, r.nxt != null ? `あと ${r.nxt - myXp()} XP` : '最高ランク！')),
+    h('div', { style: 'height:10px;border-radius:6px;background:rgba(27,27,47,.15);overflow:hidden', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(r.pct), 'aria-label': '次のランクまで' },
+      h('div', { style: `height:100%;width:${r.pct}%;background:var(--accent,#FF8A3D)` }))
   ];
 }
 function rankCard() {
   if (!PROFILE) return null;
-  return h('div', { id: 'rank-card', class: 'card', style: 'display:flex;flex-direction:column;gap:6px' }, ...rankCardKids());
+  return h('div', { id: 'rank-card', class: 'card', style: 'display:flex;flex-direction:column;gap:6px;padding:9px 14px' }, ...rankCardKids());
 }
 setInterval(() => { if ($('#rank-card') && $('#scr-title').classList.contains('active')) refreshRankCard(); }, 15000);
-function refreshRankCard() { const c = $('#rank-card'); if (c && PROFILE) c.replaceChildren(...rankCardKids()); if (PROFILE) updateChip(); }
+function refreshRankCard() { const c = $('#rank-card'); if (c && PROFILE) c.replaceChildren(...rankCardKids()); if (PROFILE) updateChip(); refreshHud(); }
 
 /* ---------- ガチャ(ごほうびカプセル) ---------- */
 const G_RATE = [['miss', 40], ['r', 30], ['sr', 17], ['hr', 8], ['lr', 4], ['sec', 1]];
@@ -2828,6 +2886,7 @@ function giftsAvail() {
   return (NET.gifts || []).filter(x => !g.gifts.includes(x.id) && (!x.until || x.until > Date.now()) && (!x.to || x.to === NET.me));
 }
 function gUpdateBadge() {
+  refreshHud();
   const n = gState().tix + giftsAvail().length;
   document.querySelectorAll('#gacha-badge').forEach(b => { b.textContent = String(n); b.hidden = !n; });
 }
@@ -3030,8 +3089,7 @@ function renderMis() {
         got ? '✅ 受け取りずみ' : !done ? 'ミッション中' : full ? '券が上限です（先にひいてね）' : '🎁 受け取る'));
   };
   fill($('#scr-mis'),
-    h('div', { class: 'row2', style: 'align-items:center' }, h('button', { class: 'btn small', type: 'button', onclick: () => { renderTitle(); go('title'); } }, '← もどる'),
-      h('h2', { style: 'margin:0 auto;font-size:22px' }, '📋 ミッション')),
+    h('h2', { style: 'margin:0 auto;font-size:22px' }, '📋 ミッション'),
     ...evActiveIds().map(id => {
       const d = window.DB_EVENTS[id], e = NET.events[id], L = evTasks(m, id), got = evClaimed(id), full = g.tix + (e.tix || 0) > MAX_TIX, ok = evAllDone(m, id);
       const pz = d.prize && STAMP_BY[d.prize];
@@ -3093,8 +3151,7 @@ function renderGacha(tab) {
     h('button', { type: 'button', 'aria-pressed': String(gTab === 'zukan'), onclick: () => renderGacha('zukan') }, `図鑑 ${items.filter(own).length}/${items.length}`),
     h('button', { type: 'button', 'aria-pressed': String(gTab === 'swap'), onclick: () => renderGacha('swap') }, 'カケラ交換'));
   fill($('#scr-gacha'),
-    h('div', { class: 'row2', style: 'align-items:center' }, h('button', { class: 'btn small', type: 'button', onclick: () => { renderTitle(); go('title'); } }, '← もどる'),
-      h('h2', { style: 'margin:0 auto;font-size:22px' }, '🎁 ごほうびカプセル')),
+    h('h2', { style: 'margin:0 auto;font-size:22px' }, '🎁 ごほうびカプセル'),
     h('div', { class: 'card stack', style: 'text-align:center' },
       h('div', { style: 'display:flex;justify-content:space-around;font-weight:900;font-size:17px' },
         h('span', {}, '🎟 券 ', h('b', {}, '×' + g.tix)), h('span', {}, '💎 カケラ ', h('b', {}, '×' + g.shards)), h('span', {}, '♥ ボーナス ', h('b', {}, '×' + g.hx))),
@@ -3196,6 +3253,10 @@ function installHint() {
   }
   return null;
 }
+$('#tab-home').addEventListener('click', () => { SND.sfx('tap'); renderTitle(); go('title'); SND.bgm('menu'); });
+$('#tab-online').addEventListener('click', () => { SND.sfx('tap'); showOnline(); });
+$('#tab-gacha').addEventListener('click', () => { SND.sfx('tap'); showGacha(); });
+$('#tab-mis').addEventListener('click', () => { SND.sfx('tap'); showMis(); });
 if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(localhost|127\.)/.test(location.hostname + '.')) {
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
