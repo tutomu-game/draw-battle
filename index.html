@@ -193,6 +193,9 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 .sw{flex:0 0 calc((100% - 42px) / 8);max-width:44px;aspect-ratio:1;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer;padding:0;font-family:var(--f-display);font-size:13px;color:var(--ink);touch-action:manipulation}
 .sw[aria-pressed="true"]{transform:scale(1.18);box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--ink)}
 .row2{display:flex;gap:8px;align-items:center}
+.hearts{color:#E0391F;letter-spacing:2px;font-size:18px;font-weight:900}
+.hearts .e{color:#b9b9c8}
+.hearts small{color:var(--ink);letter-spacing:0;font-size:12px;font-weight:800;margin-left:6px;opacity:.85}
 .badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:8px;border-radius:999px;background:#E0391F;color:#fff;border:2px solid #fff;font-size:13px;font-weight:900;vertical-align:middle;animation:badgePulse 1.4s ease-in-out infinite}
 .badge[hidden]{display:none}
 @keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
@@ -1175,6 +1178,7 @@ function showJudge() {
     badge(c.judge, true),
     h('h2', { style: 'font-size:26px' }, solo ? '描き終わり！' : '全員描き終わり！'),
     h('p', {}, S.mode === 'guess' ? `審査員の「${c.judge.name}」が、何を描いたか当てます。` : `審査員の「${c.judge.name}」が絵を見てくれます。`),
+    needsHeart() ? h('p', { style: 'text-align:center' }, '審査にはハートを1つ使います', h('br'), heartsEl(true)) : null,
     h('div', { class: 'grow' }),
     h('button', { class: 'btn primary big', type: 'button', onclick: runJudging }, S.mode === 'guess' ? '当ててもらう！' : '審査してもらう！')
   );
@@ -1392,13 +1396,72 @@ async function askAIOnce(sent) {
   } finally { clearTimeout(to); }
 }
 
+/* ---------- ハート(AI審査の回数) ---------- */
+const HEART_MAX = 5, HEART_MS = 30 * 60 * 1000;
+function heartState() {
+  let hp = HEART_MAX, at = 0;
+  const p = NET.state === 'ready' && NET.players && NET.players[NET.me];
+  if (p) { if (typeof p.hp === 'number') { hp = p.hp; at = p.hpAt || 0; } }
+  else { try { const l = JSON.parse(localStorage.getItem('dbHeart') || 'null'); if (l && typeof l.hp === 'number') { hp = l.hp; at = l.at || 0; } } catch (e) {} }
+  const now = Date.now(), g = at ? Math.max(0, Math.floor((now - at) / HEART_MS)) : HEART_MAX;
+  const eff = Math.min(HEART_MAX, hp + g);
+  const nextMs = eff >= HEART_MAX || !at ? 0 : HEART_MS - ((now - at) % HEART_MS);
+  return { hp, at, eff, nextMs };
+}
+const needsHeart = () => S.mode !== 'daily';
+function fmtMs(ms) { const t = Math.ceil(ms / 1000), m = Math.floor(t / 60), sec = t % 60; return m + ':' + String(sec).padStart(2, '0'); }
+function heartsEl(withTimer) {
+  const st = heartState();
+  return h('span', { class: 'hearts', role: 'img', 'aria-label': `審査ハート ${st.eff}個 / ${HEART_MAX}個` },
+    '♥'.repeat(st.eff), h('span', { class: 'e' }, '♥'.repeat(HEART_MAX - st.eff)),
+    withTimer && st.eff < HEART_MAX ? h('small', {}, 'あと' + fmtMs(st.nextMs) + 'で+1') : null);
+}
+function spendHeart() {
+  const st = heartState();
+  if (st.eff <= 0) return false;
+  const now = Date.now(), gained = st.at ? Math.floor((now - st.at) / HEART_MS) : 0;
+  const hp = st.eff - 1, at = st.eff >= HEART_MAX ? now : st.at + gained * HEART_MS;
+  try { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); } catch (e) {}
+  if (NET.state === 'ready' && NET.players[NET.me]) {
+    NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at };
+    pushing = pushing.then(() => NET.db.doc('players/' + NET.me).update({ hp, hpAt: at })).catch(() => {});
+  }
+  refreshRankCard();
+  return true;
+}
+function heartsEmpty(retry) {
+  const c = S.cur;
+  SND.sfx('error');
+  const canVote = S.mode === 'battle' && S.players.length >= 2 && !S.online;
+  const timer = h('b', { style: 'font-size:26px' }, '');
+  const btn = h('button', { class: canVote ? 'btn' : 'btn primary big', type: 'button', disabled: true, onclick: () => { clearInterval(iv); retry(); } }, 'もう一度審査してもらう');
+  const tick = () => {
+    const st = heartState();
+    if (st.eff > 0) { timer.textContent = '回復しました！'; btn.disabled = false; clearInterval(iv); }
+    else timer.textContent = 'あと ' + fmtMs(st.nextMs);
+  };
+  const iv = setInterval(() => { if (!document.body.contains(timer)) { clearInterval(iv); return; } tick(); }, 1000);
+  fill($('#scr-judge'),
+    h('div', { class: 'grow' }), badge(c.judge, true),
+    h('h2', { style: 'font-size:24px' }, 'ハートがなくなりました'),
+    h('div', {}, heartsEl(false)),
+    h('p', {}, '審査にはハートが1つ必要です。時間がたつと、1つずつ回復します。'),
+    h('div', { style: 'text-align:center' }, h('small', {}, '次のハートまで'), h('div', {}, timer)),
+    h('div', { class: 'grow' }),
+    canVote ? h('button', { class: 'btn primary big', type: 'button', onclick: () => { clearInterval(iv); startVote(); } }, 'AIなしで投票して決める') : null,
+    btn,
+    h('button', { class: 'btn', type: 'button', onclick: () => { clearInterval(iv); renderTitle(); go('title'); } }, 'タイトルにもどる'));
+  tick();
+}
+
 async function runJudging() {
   const c = S.cur;
   const sent = c.drawings.map((d, i) => i).filter(i => !c.drawings[i].blank);
+  if (sent.length && needsHeart() && heartState().eff <= 0) { heartsEmpty(runJudging); return; }
   const stop = judgeLoading();
   let ai = null;
   try {
-    if (sent.length) ai = await askAI(sent);
+    if (sent.length) { ai = await askAI(sent); if (needsHeart()) spendHeart(); }
     if (S.ai.state === 'quota') { S.ai.state = 'ready'; updateAiStatus(); }
   } catch (err) {
     stop(); judgeError(err); return;
@@ -1771,7 +1834,7 @@ function pushProfile() {
     const old = cur.exists ? cur.data() : {};
     const code = old.code || genCode(6, CODE_CH);
     if (old.name === PROFILE.name && old.shape === PROFILE.shape && old.code === code) return;
-    await ref.set({ name: PROFILE.name, shape: PROFILE.shape, code, ts: Date.now(), ...(typeof old.xp === 'number' ? { xp: old.xp } : {}), ...(typeof old.xpAt === 'number' ? { xpAt: old.xpAt } : {}) });
+    await ref.set({ name: PROFILE.name, shape: PROFILE.shape, code, ts: Date.now(), ...(typeof old.xp === 'number' ? { xp: old.xp } : {}), ...(typeof old.xpAt === 'number' ? { xpAt: old.xpAt } : {}), ...(typeof old.hp === 'number' ? { hp: old.hp } : {}), ...(typeof old.hpAt === 'number' ? { hpAt: old.hpAt } : {}) });
   }).catch(e => { if (e && (e.code === 'invalid_argument' || e.code === 'permission-denied')) { NET.state = 'ro'; refreshOnline(); } });
   return pushing;
 }
@@ -2344,6 +2407,7 @@ function renderWaitDrawings() {
 async function hostJudge(retry) {
   const d = G.game;
   if (G.judging && !retry) return;
+  if (heartState().eff <= 0) { go('judge'); heartsEmpty(() => hostJudge(true)); return; }
   G.judging = true;
   if (!retry) await gameUpdate({ phase: 'judging' });
   S.cur.drawings = d.order.map(u => {
@@ -2354,7 +2418,7 @@ async function hostJudge(retry) {
   const stop = judgeLoading();
   const sent = S.cur.drawings.map((x, i) => i).filter(i => !S.cur.drawings[i].blank);
   let ai = null;
-  try { if (sent.length) ai = await askAI(sent); }
+  try { if (sent.length) { ai = await askAI(sent); spendHeart(); } }
   catch (err) { stop(); judgeError(err, () => hostJudge(true), null); return; }
   stop();
   try {
@@ -2581,6 +2645,7 @@ function rankCardKids() {
       h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:18px' }, 'Lv.' + r.lv + ' ' + r.name)),
     h('div', { style: 'height:10px;border-radius:6px;background:rgba(27,27,47,.15);overflow:hidden', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(r.pct), 'aria-label': 'ランクの進み具合' },
       h('div', { style: `height:100%;width:${r.pct}%;background:var(--accent,#FF8A3D)` })),
+    h('div', { style: 'font-weight:800;font-size:13px' }, '審査ハート ', heartsEl(true)),
     h('small', { style: 'font-weight:800;opacity:.85' }, r.nxt != null ? `${myXp()} XP ・ 次の「${r.nextName}」まであと ${r.nxt - myXp()} XP` : `${myXp()} XP ・ 最高ランク！`)
   ];
 }
@@ -2588,6 +2653,7 @@ function rankCard() {
   if (!PROFILE) return null;
   return h('div', { id: 'rank-card', class: 'card', style: 'display:flex;flex-direction:column;gap:6px' }, ...rankCardKids());
 }
+setInterval(() => { if ($('#rank-card') && $('#scr-title').classList.contains('active')) refreshRankCard(); }, 15000);
 function refreshRankCard() { const c = $('#rank-card'); if (c && PROFILE) c.replaceChildren(...rankCardKids()); }
 
 /* ---------- 通報・ブロック ---------- */
@@ -2654,7 +2720,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
 
-if (window.__fbSdkMock) window.__dbg = { recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), rename: n => { PROFILE.name = n; return pushProfile(); } };
+if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
 
 function boot(saved) {
   if (saved && typeof saved === 'object') {
