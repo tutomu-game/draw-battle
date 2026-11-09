@@ -2894,7 +2894,7 @@ function renderGacha(tab) {
       h('div', { style: 'display:flex;justify-content:space-around;font-weight:900;font-size:17px' },
         h('span', {}, '🎟 券 ', h('b', {}, '×' + g.tix)), h('span', {}, '💎 カケラ ', h('b', {}, '×' + g.shards)), h('span', {}, '♥ ボーナス ', h('b', {}, '×' + g.hx))),
       h('button', { class: 'btn primary big', type: 'button', disabled: g.tix < 1, onclick: pullUI }, g.tix < 1 ? '券がありません' : 'カプセルをひく（券1枚）'),
-      h('small', { style: 'font-weight:800;opacity:.85' }, '券は、毎日1枚と、ランクアップごとにもらえます（最大10枚）',
+      h('small', { style: 'font-weight:800;opacity:.85' }, '券は、毎日1枚と、ランクアップごとにもらえます（最大10枚）'),
       h('details', { style: 'text-align:left;font-weight:800;font-size:13px' }, h('summary', {}, '出やすさ（提供割合）'),
         h('p', { style: 'margin:6px 0 0;line-height:1.7' }, 'ハズレ 40％ ／ ★レア 30％ ／ ★★スーパーレア 17％ ／ ★★★ハイパーレア 8％ ／ ★★★★レジェンドレア 4％ ／ シークレット 1％',
           h('br'), 'ハズレでも ♥ボーナス＋1 と 💎カケラ＋2 がもらえます。すでに持っているものが出たときは、カケラになります。'))),
