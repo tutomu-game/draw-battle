@@ -786,7 +786,7 @@ function renderSetup() {
   const gachaBtn = NET.state === 'ready' ? h('button', { class: 'btn big', type: 'button', onclick: showGacha }, '🎁 ごほうびカプセル', h('span', { class: 'badge', id: 'gacha-badge', hidden: true, 'aria-label': '使える券' })) : null;
   const misBtn = NET.state === 'ready' ? h('button', { class: 'btn big', type: 'button', onclick: showMis }, '📋 ミッション', h('span', { class: 'badge', id: 'mis-badge', hidden: true, 'aria-hidden': 'true' })) : null;
   setTimeout(misBadge, 0);
-  fill(dyn, rankCard(), eventBanner(), dailyBtn(), gachaBtn, misBtn, onlineBtn, modeCard, howEl, setup, histBtn, installHint(), legal);
+  fill(dyn, rankCard(), h('div', { id: 'ev-slot' }, eventBanner()), dailyBtn(), gachaBtn, misBtn, onlineBtn, modeCard, howEl, setup, histBtn, installHint(), legal);
   updateAiStatus();
 }
 
@@ -2811,7 +2811,7 @@ function startGacha() {
     gUpdateBadge(); autoGrants();
     if ($('#scr-gacha').classList.contains('active') && !document.querySelector('.gc-ov')) renderGacha();
   }, () => {});
-  NET.db.collection('events').get().then(sn => { NET.events = {}; sn.docs.forEach(d => { NET.events[d.id] = d.data(); }); gUpdateBadge(); misBadge(); }).catch(() => {});
+  NET.db.collection('events').get().then(sn => { NET.events = {}; sn.docs.forEach(d => { NET.events[d.id] = d.data(); }); gUpdateBadge(); misBadge(); refreshEvBanner(); if ($('#scr-mis').classList.contains('active')) renderMis(); }).catch(() => {});
   NET.db.collection('gifts').get().then(sn => { NET.gifts = sn.docs.map(d => ({ id: d.id, ...d.data() })); gUpdateBadge(); }).catch(() => {});
 }
 // 毎日1枚・ランクアップで1枚を自動で受け取る
@@ -2892,6 +2892,7 @@ function evClaim(id) {
   SND.sfx('win'); showToast(`🎁 イベントミッション達成！ 券 ＋${tix}・💎 ＋${sh}`, 'ひく', showGacha);
   misBadge(); renderMis();
 }
+function refreshEvBanner() { const el = $('#ev-slot'); if (el) { const b = eventBanner(); el.replaceChildren(...(b ? [b] : [])); } }
 function eventBanner() {
   const ids = evActiveIds();
   if (!ids.length) return null;
@@ -2944,7 +2945,7 @@ function misCount(rec) {
       const was = misDone(before[k]), now = misDone(after[k]);
       if (now && !was) showToast(k === 'd' ? '📋 デイリーミッション、ぜんぶ達成！' : '📋 ウィークリーミッション、ぜんぶ達成！', 'うけとる', showMis);
     });
-    misBadge();
+    misBadge(); refreshEvBanner();
     if ($('#scr-mis').classList.contains('active')) renderMis();
   } catch (e) {}
 }
@@ -3146,7 +3147,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
 
-if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
+if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
 
 function boot(saved) {
   if (saved && typeof saved === 'object') {
