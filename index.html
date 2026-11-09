@@ -701,7 +701,7 @@ function renderSetup() {
   const histBtn = h('button', { class: 'btn small', type: 'button', style: 'align-self:center', onclick: showHistory }, '📜 せんれき');
   const legal = h('p', { style: 'text-align:center;font-size:12px;font-weight:800;opacity:.8' },
     h('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, '利用規約'), ' ・ ', h('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, 'プライバシーポリシー'));
-  fill(dyn, dailyBtn(), onlineBtn, modeCard, howEl, setup, histBtn, installHint(), legal);
+  fill(dyn, rankCard(), dailyBtn(), onlineBtn, modeCard, howEl, setup, histBtn, installHint(), legal);
   updateAiStatus();
 }
 
@@ -1557,7 +1557,7 @@ function copyText(t) {
 function updateChip() {
   const c = $('#me-chip');
   if (!PROFILE) { c.hidden = true; return; }
-  c.replaceChildren(avatar(PROFILE.shape, 28, true), h('span', { class: 'nm' }, PROFILE.name));
+  c.replaceChildren(avatar(PROFILE.shape, 28, true), h('span', { class: 'nm' }, PROFILE.name), h('small', { style: 'font-weight:800;margin-left:4px' }, 'Lv.' + rankOf(myXp()).lv));
   c.hidden = false;
 }
 $('#me-chip').addEventListener('click', () => showReg(true));
@@ -1571,7 +1571,7 @@ function pushProfile() {
     const old = cur.exists ? cur.data() : {};
     const code = old.code || genCode(6, CODE_CH);
     if (old.name === PROFILE.name && old.shape === PROFILE.shape && old.code === code) return;
-    await ref.set({ name: PROFILE.name, shape: PROFILE.shape, code, ts: Date.now() });
+    await ref.set({ name: PROFILE.name, shape: PROFILE.shape, code, ts: Date.now(), ...(typeof old.xp === 'number' ? { xp: old.xp } : {}), ...(typeof old.xpAt === 'number' ? { xpAt: old.xpAt } : {}) });
   }).catch(e => { if (e && (e.code === 'invalid_argument' || e.code === 'permission-denied')) { NET.state = 'ro'; refreshOnline(); } });
   return pushing;
 }
@@ -1665,7 +1665,7 @@ async function netInit() {
   NET.state = !NET.db ? 'nodb' : !NET.me ? 'noid' : can === false ? 'ro' : 'ready';
   if (NET.state === 'ready') {
     if (!PROFILE) await adoptCloudProfile();
-    startNet(); pushProfile();
+    startNet(); pushProfile().then(flushXp);
   }
   use('room').then(r => { NET.room = r; if (r && NET.state === 'ready') startRoom(); }).catch(() => {});
   refreshOnline();
@@ -1677,7 +1677,7 @@ function startNet() {
   if (NET.started) return;
   NET.started = true;
   const { db, me } = NET, bad = () => {};
-  db.collection('players').onSnapshot(sn => { const m = {}; sn.docs.forEach(d => { m[d.id] = d.data(); }); NET.players = m; refreshOnline(); }, bad);
+  db.collection('players').onSnapshot(sn => { const m = {}; sn.docs.forEach(d => { m[d.id] = d.data(); }); NET.players = m; refreshOnline(); refreshRankCard(); if (PROFILE) updateChip(); }, bad);
   db.doc(`data/users/${me}/friends`).onSnapshot(sn => { NET.friends = sn.exists && Array.isArray(sn.data().ids) ? sn.data().ids : []; refreshOnline(); }, bad);
   db.collection('requests').where('to', '==', me).onSnapshot(sn => { NET.reqIn = sn.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.status === 'pending'); refreshOnline(); }, bad);
   db.collection('requests').where('from', '==', me).onSnapshot(sn => { NET.reqOut = sn.docs.map(d => ({ id: d.id, ...d.data() })); handleAccepted(); refreshOnline(); }, bad);
@@ -1799,7 +1799,7 @@ function renderOnline() {
     h('h3', { class: 'sec' }, `友達（${NET.friends.length}）`),
     NET.friends.length
       ? h('div', {}, NET.friends.map(f => h('div', { class: 'frow' }, avatar((NET.players[f] || {}).shape || 0, 34, true),
-          h('span', { class: 'fn' }, nameOf(f)),
+          h('span', { class: 'fn' }, nameOf(f)), h('small', {}, lvTag(f)),
           h('i', { class: 'od' + (isOnline(f) ? ' on' : ''), 'aria-hidden': 'true' }), h('small', {}, isOnline(f) ? 'オンライン' : 'オフライン'),
           h('button', { class: 'btn small', type: 'button', 'aria-label': nameOf(f) + 'を友達から外す', onclick: () => removeFriend(f) }, '外す'))))
       : h('p', { class: 'gline' }, 'まだ友達がいません。友達コードを入力して追加しよう。'),
@@ -2134,9 +2134,11 @@ const loadHistory = () => { try { return JSON.parse(localStorage.getItem(HKEY) |
 function recordHistory(rec) {
   try {
     const list = loadHistory();
-    if (rec.id && list.some(x => x.id === rec.id)) { const i = list.findIndex(x => x.id === rec.id); list[i] = { ...list[i], ...rec }; }
+    let fresh = true;
+    if (rec.id && list.some(x => x.id === rec.id)) { fresh = false; const i = list.findIndex(x => x.id === rec.id); list[i] = { ...list[i], ...rec }; }
     else list.push({ ts: Date.now(), ...rec });
     localStorage.setItem(HKEY, JSON.stringify(list.slice(-100)));
+    if (fresh) setTimeout(() => awardXp(rec), 0);
   } catch (e) {}
 }
 const KIND_NAME = { attack: '縛りチャレンジ', guess: 'AIに当てさせろ', online: 'オンライン対戦', daily: '今日の1題' };
@@ -2254,11 +2256,11 @@ async function showDailyBoard(submit, dateArg) {
     h('div', { class: medal[i] }, (i + 1) + '位'),
     h('button', { class: 'thumb', type: 'button', style: 'width:100%;aspect-ratio:4/5', 'aria-label': e.name + 'の絵を大きく見る', onclick: () => imgs[i] && openBox(imgs[i]) },
       imgs[i] ? h('img', { src: imgs[i], alt: e.name + 'の絵' }) : null),
-    h('div', { class: 'rname', style: 'margin-top:8px' }, avatar(e.shape || 0, 24, true), h('span', { class: 'nm' }, e.name), h('b', { style: 'margin-left:auto;font-family:var(--f-display);font-weight:400;font-size:20px' }, e.score + '点')),
+    h('div', { class: 'rname', style: 'margin-top:8px' }, avatar(e.shape || 0, 24, true), h('span', { class: 'nm' }, e.name), h('small', { style: 'font-weight:800;opacity:.8' }, lvTag(e.uid)), h('b', { style: 'margin-left:auto;font-family:var(--f-display);font-weight:400;font-size:20px' }, e.score + '点')),
     e.comment ? h('p', { class: 'seen', style: 'margin-top:4px' }, e.comment) : null,
     h('div', { style: 'text-align:right;margin-top:4px' }, reportBtn({ uid: e.uid, name: e.name, where: 'daily', ref: date + '_' + e.uid }, () => showDailyBoard(false, date)))));
   const list = entries.map((e, i) => h('div', { class: 'rname', style: 'padding:6px 4px;border-bottom:2px dashed rgba(27,27,47,.2)' + (e.uid === NET.me ? ';background:#FFF3B0;border-radius:10px' : '') },
-    h('b', { style: 'width:34px;font-family:var(--f-display);font-weight:400' }, (i + 1) + '位'), avatar(e.shape || 0, 24, true), h('span', { class: 'nm' }, e.name),
+    h('b', { style: 'width:34px;font-family:var(--f-display);font-weight:400' }, (i + 1) + '位'), avatar(e.shape || 0, 24, true), h('span', { class: 'nm' }, e.name), h('small', { style: 'font-weight:800;opacity:.8' }, lvTag(e.uid)),
     h('b', { style: 'margin-left:auto' }, e.score + '点'), reportBtn({ uid: e.uid, name: e.name, where: 'daily-name', ref: date + '_' + e.uid }, () => showDailyBoard(false, date))));
   fill(el,
     h('div', {}, h('span', { class: 'pill' }, '📅 ' + date + ' の1題'), ' ', h('b', { style: 'font-size:14px' }, '「' + sp.topic + '」')),
@@ -2277,6 +2279,75 @@ async function showDailyBoard(submit, dateArg) {
     h('div', { class: 'foot' }, h('button', { class: 'btn primary big', type: 'button', onclick: dailyHome }, 'タイトルにもどる')));
   go('result');
 }
+
+/* ---------- ランク(XP) ---------- */
+const RANKS = [[0, 'らくがき見習い'], [50, '落書き小僧'], [150, '下書き名人'], [300, 'スケッチ職人'], [500, '色づかいの達人'], [800, '筆の魔術師'], [1200, '画伯見習い'], [1800, '画伯'],
+  [2600, '名匠'], [3600, '巨匠'], [4900, '鬼才'], [6500, '天才'], [8500, '神童'], [11000, '絵の神様'], [14000, '伝説の絵描き']];
+function rankOf(xp) {
+  let i = 0;
+  while (i + 1 < RANKS.length && xp >= RANKS[i + 1][0]) i++;
+  const cur = RANKS[i][0], nxt = i + 1 < RANKS.length ? RANKS[i + 1][0] : null;
+  return { lv: i + 1, name: RANKS[i][1], cur, nxt, nextName: nxt != null ? RANKS[i + 1][1] : '', pct: nxt != null ? Math.min(100, Math.round((xp - cur) / (nxt - cur) * 100)) : 100 };
+}
+const pendXp = () => { try { return Math.max(0, Number(localStorage.getItem('dbXpPend')) || 0); } catch (e) { return 0; } };
+const setPend = n => { try { localStorage.setItem('dbXpPend', String(Math.max(0, Math.round(n)))); } catch (e) {} };
+const cloudXp = uid => { const p = NET.players && NET.players[uid]; return p && typeof p.xp === 'number' ? p.xp : 0; };
+const myXp = () => cloudXp(NET.me) + pendXp();
+const lvTag = uid => 'Lv.' + rankOf(uid === NET.me ? myXp() : cloudXp(uid)).lv;
+let xpTimer = 0;
+function flushXp() {
+  if (NET.state !== 'ready' || !PROFILE) return Promise.resolve();
+  pushing = pushing.then(async () => {
+    const pend = pendXp();
+    if (pend <= 0) return;
+    const ref = NET.db.doc('players/' + NET.me);
+    const cur = await ref.get();
+    if (!cur.exists) return;
+    const old = cur.data(), now = Date.now(), at = old.xpAt || 0;
+    if (now < at + 20500) { clearTimeout(xpTimer); xpTimer = setTimeout(flushXp, at + 20500 - now + 200); return; }
+    const grant = Math.min(pend, 38);
+    await ref.update({ xp: (old.xp || 0) + grant, xpAt: now });
+    setPend(pend - grant);
+    if (pend - grant > 0) { clearTimeout(xpTimer); xpTimer = setTimeout(flushXp, 21000); }
+    refreshRankCard();
+  }).catch(() => {});
+  return pushing;
+}
+function awardXp(rec) {
+  try {
+    const rounds = Math.max(1, rec.n || 1), max = rec.kind === 'guess' ? 100 : 30;
+    const q = Math.min(1, (rec.score || 0) / rounds / max);
+    let gain = 6 + 3 * Math.min(rounds, 5);
+    gain += q >= 0.9 ? 10 : q >= 0.75 ? 6 : q >= 0.6 ? 3 : 0;
+    if (rec.kind === 'daily') gain += 10 + (dailyStreak(loadHistory()) >= 3 ? 3 : 0);
+    const day = todayJST();
+    let last = ''; try { last = localStorage.getItem('dbXpDay') || ''; } catch (e) {}
+    if (last !== day) { gain += 5; try { localStorage.setItem('dbXpDay', day); } catch (e) {} }
+    gain = Math.min(gain, 38);
+    const before = rankOf(myXp());
+    setPend(pendXp() + gain);
+    const after = rankOf(myXp());
+    if (after.lv > before.lv) { showToast(`🎉 ランクアップ！ Lv.${after.lv}「${after.name}」 (+${gain}XP)`); SND.sfx('win'); }
+    else showToast(`+${gain} XP　Lv.${after.lv}「${after.name}」` + (after.nxt != null ? `　あと${after.nxt - myXp()}XP` : ''));
+    refreshRankCard(); updateChip();
+    flushXp();
+  } catch (e) {}
+}
+function rankCardKids() {
+  const r = rankOf(myXp());
+  return [
+    h('div', { class: 'row2', style: 'align-items:center;gap:8px' }, avatar(PROFILE.shape, 30, true),
+      h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:18px' }, 'Lv.' + r.lv + ' ' + r.name)),
+    h('div', { style: 'height:10px;border-radius:6px;background:rgba(27,27,47,.15);overflow:hidden', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(r.pct), 'aria-label': 'ランクの進み具合' },
+      h('div', { style: `height:100%;width:${r.pct}%;background:var(--accent,#FF8A3D)` })),
+    h('small', { style: 'font-weight:800;opacity:.85' }, r.nxt != null ? `${myXp()} XP ・ 次の「${r.nextName}」まであと ${r.nxt - myXp()} XP` : `${myXp()} XP ・ 最高ランク！`)
+  ];
+}
+function rankCard() {
+  if (!PROFILE) return null;
+  return h('div', { id: 'rank-card', class: 'card', style: 'display:flex;flex-direction:column;gap:6px' }, ...rankCardKids());
+}
+function refreshRankCard() { const c = $('#rank-card'); if (c && PROFILE) c.replaceChildren(...rankCardKids()); }
 
 /* ---------- 通報・ブロック ---------- */
 function getBlocked() { try { return JSON.parse(localStorage.getItem('dbBlocked') || '{}') || {}; } catch (e) { return {}; } }
@@ -2341,6 +2412,8 @@ function installHint() {
 if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(localhost|127\.)/.test(location.hostname + '.')) {
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
+
+if (window.__fbSdkMock) window.__dbg = { recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), rename: n => { PROFILE.name = n; return pushProfile(); } };
 
 function boot(saved) {
   if (saved && typeof saved === 'object') {

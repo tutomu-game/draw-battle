@@ -7,7 +7,17 @@ service cloud.firestore {
     // プロフィール: 誰でも読める(友達コード検索のため)。書けるのは本人だけ
     match /players/{uid} {
       allow read: if signedIn();
-      allow write: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.get('xp', 0) == 0;
+      allow delete: if signedIn() && request.auth.uid == uid;
+      // XPは減らせない・1回で40まで・20秒以上あけて更新
+      allow update: if signedIn() && request.auth.uid == uid
+        && ((request.resource.data.get('xp', 0) == resource.data.get('xp', 0)
+              && request.resource.data.get('xpAt', 0) == resource.data.get('xpAt', 0))
+          || (request.resource.data.xp > resource.data.get('xp', 0)
+              && request.resource.data.xp - resource.data.get('xp', 0) <= 40
+              && request.resource.data.xpAt >= resource.data.get('xpAt', 0) + 20000
+              && request.resource.data.xpAt <= request.time.toMillis() + 60000));
     }
     // 友達リスト: 本人だけ
     match /data/users/{uid}/{doc=**} {
