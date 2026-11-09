@@ -193,6 +193,10 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 .sw{flex:0 0 calc((100% - 42px) / 8);max-width:44px;aspect-ratio:1;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer;padding:0;font-family:var(--f-display);font-size:13px;color:var(--ink);touch-action:manipulation}
 .sw[aria-pressed="true"]{transform:scale(1.18);box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--ink)}
 .row2{display:flex;gap:8px;align-items:center}
+.pens{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 6px}
+.pn{min-width:44px;height:40px;display:grid;place-items:center;border:3px solid var(--ink);border-radius:12px;background:var(--paper);cursor:pointer;padding:0 8px;font-size:18px;touch-action:manipulation}
+.pn[aria-pressed="true"]{background:var(--soft);box-shadow:2px 2px 0 var(--ink)}
+.pn[hidden]{display:none}
 .sizes{display:flex;gap:6px;margin-right:auto}
 .sz{width:40px;height:40px;display:grid;place-items:center;border:3px solid var(--ink);border-radius:12px;background:var(--paper);cursor:pointer;padding:0;touch-action:manipulation}
 .sz i{display:block;border-radius:50%;background:var(--ink)}
@@ -299,6 +303,7 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
     <div class="bar" id="timer-bar" role="presentation"><i></i></div>
     <div class="stage" id="stage"><div id="blind-note" hidden>線は見えません。<br>感覚で描こう！</div><canvas id="cv" width="960" height="1200" aria-label="お絵描きキャンバス"></canvas></div>
     <div class="tools">
+      <div class="pens" id="pens" role="group" aria-label="ペンの種類"></div>
       <div class="swatches" id="swatches"></div>
       <div class="row2">
         <div class="sizes" id="sizes"></div>
@@ -876,7 +881,7 @@ const cv = $('#cv');
 const ctx = cv.getContext('2d');
 const COLORS = [['#1B1B2F', 'くろ'], ['#8E8E93', 'はいいろ'], ['#E0391F', 'あか'], ['#FF6FAE', 'ピンク'], ['#FF9500', 'オレンジ'], ['#FFD60A', 'きいろ'], ['#9BE04A', 'きみどり'], ['#2DB55D', 'みどり'], ['#35C6F4', 'みずいろ'], ['#2F6BFF', 'あお'], ['#1F3A93', 'こん'], ['#AF52DE', 'むらさき'], ['#7A1E5C', 'ぶどう'], ['#F4C7A1', 'はだいろ'], ['#8B5E3C', 'ちゃいろ']];
 const SIZES = [6, 16, 36];
-const D = { strokes: [], color: COLORS[0][0], erase: false, size: SIZES[1], drawing: false, cur: null, timer: null, deadline: 0, clearArm: 0, ptr: null };
+const D = { pen: 'normal', strokes: [], color: COLORS[0][0], erase: false, size: SIZES[1], drawing: false, cur: null, timer: null, deadline: 0, clearArm: 0, ptr: null };
 
 const noEdit = () => !!(D.rule && ['nofix', 'one', 'blind'].includes(D.rule.id));
 function buildTools() {
@@ -897,9 +902,11 @@ function buildTools() {
     onclick: () => { D.size = SIZES[i]; syncTools(); } }, h('i', { style: `width:${[6, 12, 20][i]}px;height:${[6, 12, 20][i]}px` }))));
   $('#btn-undo').hidden = noEdit();
   $('#btn-clear').hidden = noEdit();
+  buildPens();
   syncTools();
 }
 function syncTools() {
+  $('#pens').querySelectorAll('.pn').forEach(b => b.setAttribute('aria-pressed', String(!D.erase && b.dataset.pen === D.pen)));
   $('#swatches').querySelectorAll('.sw').forEach(b => {
     b.setAttribute('aria-pressed', String(b.dataset.erase === '1' ? D.erase : (!D.erase && b.dataset.c === D.color)));
   });
@@ -916,7 +923,92 @@ function fitCanvas() {
 }
 window.addEventListener('resize', () => { if ($('#scr-draw').classList.contains('active')) fitCanvas(); });
 
+/* ---------- ペンの種類 ---------- */
+const PENS = [['normal', '✏️', 'ふつう'], ['rainbow', '🌈', 'レインボー'], ['sparkle', '✨', 'キラキラ'], ['neon', '💡', 'ネオン'], ['crayon', '🖍️', 'クレヨン'], ['marker', '🖊️', 'マーカー']];
+const penOwned = id => true; // あとでガチャの入手状況につなぐ
+// 色の縛りがあるルールでは、色が増えるペンは使えない
+const penAllowed = id => !(D.rule && ['mono', 'tri'].includes(D.rule.id) && ['rainbow', 'sparkle'].includes(id));
+function tracePath(c, p) {
+  c.beginPath(); c.moveTo(p[0].x, p[0].y);
+  for (let i = 1; i < p.length - 1; i++) { const mx = (p[i].x + p[i + 1].x) / 2, my = (p[i].y + p[i + 1].y) / 2; c.quadraticCurveTo(p[i].x, p[i].y, mx, my); }
+  const l = p[p.length - 1]; c.lineTo(l.x, l.y);
+}
+function starPath(c, x, y, r) {
+  c.beginPath();
+  for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 - Math.PI / 2, rr = k % 2 ? r * 0.38 : r; c[k ? 'lineTo' : 'moveTo'](x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  c.closePath();
+}
+const PEN_FN = {
+  rainbow(c, s) {
+    const p = s.points, base = (s.seed || 0) % 360;
+    c.lineCap = 'round'; c.lineJoin = 'round'; c.lineWidth = s.size;
+    if (p.length === 1) { c.fillStyle = `hsl(${base},90%,55%)`; c.beginPath(); c.arc(p[0].x, p[0].y, s.size / 2, 0, Math.PI * 2); c.fill(); return; }
+    let d = 0;
+    for (let i = 1; i < p.length; i++) {
+      d += Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y);
+      c.strokeStyle = `hsl(${(base + d * 0.45) % 360},90%,55%)`;
+      c.beginPath(); c.moveTo(p[i - 1].x, p[i - 1].y); c.lineTo(p[i].x, p[i].y); c.stroke();
+    }
+  },
+  sparkle(c, s) {
+    const p = s.points, r = mulberry(s.seed || 1), cols = ['#FFC107', '#FF5FB7', '#39B8FF', '#9B6CFF'];
+    c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = s.color; c.fillStyle = s.color; c.lineWidth = s.size * 0.8;
+    if (p.length === 1) { c.beginPath(); c.arc(p[0].x, p[0].y, s.size * 0.4, 0, Math.PI * 2); c.fill(); } else { tracePath(c, p); c.stroke(); }
+    let acc = 0;
+    for (let i = 0; i < p.length; i++) {
+      if (i) acc += Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y);
+      if (i === 0 || acc > 30) {
+        acc = 0;
+        const a = r() * Math.PI * 2, dist = s.size * (0.5 + r() * 1.3), sz = 7 + r() * 9, col = cols[Math.floor(r() * cols.length)];
+        c.fillStyle = col; starPath(c, p[i].x + Math.cos(a) * dist, p[i].y + Math.sin(a) * dist, sz); c.fill();
+      }
+    }
+  },
+  neon(c, s) {
+    const p = s.points;
+    c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = s.color; c.fillStyle = s.color;
+    const passes = [[2.6, 0.16, s.color], [1.7, 0.3, s.color], [1, 1, s.color], [0.34, 0.95, '#ffffff']];
+    for (const [k, al, col] of passes) {
+      c.globalAlpha = al; c.strokeStyle = col; c.fillStyle = col; c.lineWidth = s.size * k;
+      if (p.length === 1) { c.beginPath(); c.arc(p[0].x, p[0].y, s.size * k / 2, 0, Math.PI * 2); c.fill(); } else { tracePath(c, p); c.stroke(); }
+    }
+    c.globalAlpha = 1;
+  },
+  crayon(c, s) {
+    const p = s.points;
+    c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = s.color; c.fillStyle = s.color;
+    for (let k = 0; k < 3; k++) {
+      const r = mulberry((s.seed || 1) + k * 7919), j = s.size * 0.3;
+      const q = p.map(pt => ({ x: pt.x + (r() - 0.5) * j, y: pt.y + (r() - 0.5) * j }));
+      c.globalAlpha = 0.5; c.lineWidth = s.size * (0.6 + k * 0.18);
+      if (q.length === 1) { c.beginPath(); c.arc(q[0].x, q[0].y, c.lineWidth / 2, 0, Math.PI * 2); c.fill(); }
+      else { c.beginPath(); c.moveTo(q[0].x, q[0].y); for (let i = 1; i < q.length; i++) c.lineTo(q[i].x, q[i].y); c.stroke(); }
+    }
+    const r2 = mulberry((s.seed || 1) ^ 0x5bd1e995);
+    c.globalAlpha = 0.45;
+    for (let i = 0; i < p.length; i++) {
+      for (let m = 0; m < 2; m++) { const a = r2() * Math.PI * 2, d = r2() * s.size * 0.7, rad = 0.8 + r2() * 1.8; c.beginPath(); c.arc(p[i].x + Math.cos(a) * d, p[i].y + Math.sin(a) * d, rad, 0, Math.PI * 2); c.fill(); }
+    }
+    c.globalAlpha = 1;
+  },
+  marker(c, s) {
+    const p = s.points;
+    c.lineCap = 'square'; c.lineJoin = 'bevel'; c.strokeStyle = s.color; c.fillStyle = s.color; c.lineWidth = s.size * 1.3; c.globalAlpha = 0.5;
+    if (p.length === 1) { c.fillRect(p[0].x - c.lineWidth / 2, p[0].y - c.lineWidth / 2, c.lineWidth, c.lineWidth); } else { tracePath(c, p); c.stroke(); }
+    c.globalAlpha = 1;
+  }
+};
+function buildPens() {
+  const box = $('#pens');
+  if (D.blind) { box.hidden = true; return; }
+  box.hidden = false;
+  if (!penAllowed(D.pen) || !penOwned(D.pen)) D.pen = 'normal';
+  box.replaceChildren(...PENS.filter(([id]) => penOwned(id) && penAllowed(id)).map(([id, ico, name]) =>
+    h('button', { class: 'pn', type: 'button', 'data-pen': id, 'aria-label': name + 'ペン', 'aria-pressed': 'false', onclick: () => { D.pen = id; D.erase = false; syncTools(); } }, ico)));
+}
+
 function strokePath(c, s) {
+  if (s.pen && s.pen !== 'normal' && !s.erase && PEN_FN[s.pen]) { c.save(); PEN_FN[s.pen](c, s); c.restore(); return; }
   c.strokeStyle = s.color; c.fillStyle = s.color; c.lineWidth = s.size; c.lineCap = 'round'; c.lineJoin = 'round';
   const p = s.points;
   if (p.length === 1) { c.beginPath(); c.arc(p[0].x, p[0].y, s.size / 2, 0, Math.PI * 2); c.fill(); return; }
@@ -942,7 +1034,7 @@ cv.addEventListener('pointerdown', e => {
   e.preventDefault();
   try { cv.setPointerCapture(e.pointerId); } catch (_) {}
   D.ptr = e.pointerId;
-  D.cur = { color: D.erase ? '#ffffff' : D.color, size: D.erase ? Math.max(D.size, 24) : D.size, erase: D.erase, points: [toPt(e)] };
+  D.cur = { color: D.erase ? '#ffffff' : D.color, size: D.erase ? Math.max(D.size, 24) : D.size, erase: D.erase, pen: D.erase ? 'normal' : D.pen, seed: (Math.random() * 1e9) | 0, points: [toPt(e)] };
   D.strokes.push(D.cur);
   if (!D.blind) strokePath(ctx, D.cur);
 });
