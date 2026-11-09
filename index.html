@@ -2730,7 +2730,8 @@ function rankOf(xp) {
 const pendXp = () => { try { return Math.max(0, Number(localStorage.getItem('dbXpPend')) || 0); } catch (e) { return 0; } };
 const setPend = n => { try { localStorage.setItem('dbXpPend', String(Math.max(0, Math.round(n)))); } catch (e) {} };
 const cloudXp = uid => { const p = NET.players && NET.players[uid]; return p && typeof p.xp === 'number' ? p.xp : 0; };
-const myXp = () => cloudXp(NET.me) + pendXp();
+let xpInflight = 0; // サーバーに送っている最中の経験値(二重に数えない)
+const myXp = () => cloudXp(NET.me) + Math.max(0, pendXp() - xpInflight);
 const lvTag = uid => 'Lv.' + rankOf(uid === NET.me ? myXp() : cloudXp(uid)).lv;
 let xpTimer = 0;
 function flushXp() {
@@ -2744,8 +2745,8 @@ function flushXp() {
     const old = cur.data(), now = Date.now(), at = old.xpAt || 0;
     if (now < at + 20500) { clearTimeout(xpTimer); xpTimer = setTimeout(flushXp, at + 20500 - now + 200); return; }
     const grant = Math.min(pend, 38);
-    await ref.update({ xp: (old.xp || 0) + grant, xpAt: now });
-    setPend(pend - grant);
+    xpInflight = grant;
+    try { await ref.update({ xp: (old.xp || 0) + grant, xpAt: now }); setPend(pend - grant); } finally { xpInflight = 0; }
     if (pend - grant > 0) { clearTimeout(xpTimer); xpTimer = setTimeout(flushXp, 21000); }
     refreshRankCard();
   }).catch(() => {});
@@ -2787,7 +2788,7 @@ function rankCard() {
   return h('div', { id: 'rank-card', class: 'card', style: 'display:flex;flex-direction:column;gap:6px' }, ...rankCardKids());
 }
 setInterval(() => { if ($('#rank-card') && $('#scr-title').classList.contains('active')) refreshRankCard(); }, 15000);
-function refreshRankCard() { const c = $('#rank-card'); if (c && PROFILE) c.replaceChildren(...rankCardKids()); }
+function refreshRankCard() { const c = $('#rank-card'); if (c && PROFILE) c.replaceChildren(...rankCardKids()); if (PROFILE) updateChip(); }
 
 /* ---------- ガチャ(ごほうびカプセル) ---------- */
 const G_RATE = [['miss', 40], ['r', 30], ['sr', 17], ['hr', 8], ['lr', 4], ['sec', 1]];
@@ -2943,7 +2944,7 @@ function eventBanner() {
   const m = misLoad();
   return h('div', { class: 'stack' }, ids.map(id => {
     const d = window.DB_EVENTS[id], total = (d.tasks || []).length, left = evDaysLeft(id), done = evAllDone(m, id);
-    return h('button', { class: 'card', type: 'button', onclick: showMis, style: 'text-align:left;background:linear-gradient(135deg,#FFE066,#FF9CC7);border:3px solid var(--ink,#1B1B2F);cursor:pointer' },
+    return h('button', { class: 'card', type: 'button', onclick: showMis, style: 'text-align:left;background:linear-gradient(135deg,#FFE066,#FF9CC7);border:3px solid var(--ink,#1B1B2F);cursor:pointer;color:#1B1B2F;font-family:inherit;width:100%' },
       h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:8px' }, h('b', { style: 'font-size:18px' }, `${d.emoji} ${d.title}`), h('small', { style: 'font-weight:900' }, left <= 1 ? '今日まで！' : `あと${left}日`)),
       h('small', { style: 'font-weight:800;display:block;margin-top:4px' }, evClaimed(id) ? '✅ 全クリアのごほうびを受け取りずみ' : done ? '🎁 全クリア！ タップして特別スタンプを受け取る' : `ミッション ${evDoneCount(m, id)}/${total} クリア　（タップで見る）`));
   }));
@@ -3199,7 +3200,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
 
-if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
+if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { myXp: () => myXp(), lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
 
 function boot(saved) {
   if (saved && typeof saved === 'object') {
