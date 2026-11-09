@@ -386,6 +386,7 @@ body.fx-shake{animation:fxShake .45s linear 3}
   </section>
   <section id="scr-judge" class="screen center" aria-label="審査"></section>
   <section id="scr-gacha" class="screen" aria-label="ごほうびカプセル"></section>
+  <section id="scr-mis" class="screen" aria-label="ミッション"></section>
   <section id="scr-reg" class="screen" aria-label="プロフィール"></section>
   <section id="scr-online" class="screen" aria-label="オンライン"></section>
   <section id="scr-lobby" class="screen" aria-label="ルーム"></section>
@@ -782,7 +783,9 @@ function renderSetup() {
   updateOnlineBadge(onlineBtn);
   setTimeout(gUpdateBadge, 0);
   const gachaBtn = NET.state === 'ready' ? h('button', { class: 'btn big', type: 'button', onclick: showGacha }, '🎁 ごほうびカプセル', h('span', { class: 'badge', id: 'gacha-badge', hidden: true, 'aria-label': '使える券' })) : null;
-  fill(dyn, rankCard(), dailyBtn(), gachaBtn, onlineBtn, modeCard, howEl, setup, histBtn, installHint(), legal);
+  const misBtn = NET.state === 'ready' ? h('button', { class: 'btn big', type: 'button', onclick: showMis }, '📋 ミッション', h('span', { class: 'badge', id: 'mis-badge', hidden: true, 'aria-hidden': 'true' })) : null;
+  setTimeout(misBadge, 0);
+  fill(dyn, rankCard(), dailyBtn(), gachaBtn, misBtn, onlineBtn, modeCard, howEl, setup, histBtn, installHint(), legal);
   updateAiStatus();
 }
 
@@ -2541,7 +2544,7 @@ function recordHistory(rec) {
     if (rec.id && list.some(x => x.id === rec.id)) { fresh = false; const i = list.findIndex(x => x.id === rec.id); list[i] = { ...list[i], ...rec }; }
     else list.push({ ts: Date.now(), ...rec });
     localStorage.setItem(HKEY, JSON.stringify(list.slice(-100)));
-    if (fresh) setTimeout(() => awardXp(rec), 0);
+    if (fresh) { setTimeout(() => awardXp(rec), 0); setTimeout(() => misCount(rec), 0); }
   } catch (e) {}
 }
 const KIND_NAME = { attack: '縛りチャレンジ', guess: 'AIに当てさせろ', online: 'オンライン対戦', daily: '今日の1題' };
@@ -2762,7 +2765,7 @@ const MAX_TIX = 10;
 const RAR_ORDER = ['r', 'sr', 'hr', 'lr', 'sec'];
 const RAR_STAR = { r: '★ レア', sr: '★★ スーパーレア', hr: '★★★ ハイパーレア', lr: '★★★★ レジェンドレア', sec: '？？？ シークレット' };
 const RAR_COL = { r: '#6FB1FF', sr: '#FFC933', hr: '#C28BFF', lr: '#FF8A3D', sec: '#FFD23F' };
-const GDEF = () => ({ tix: 0, shards: 0, own: [], day: '', lvg: 1, gifts: [], pulls: 0, hx: 0, inv: [] });
+const GDEF = () => ({ tix: 0, shards: 0, own: [], day: '', lvg: 1, gifts: [], pulls: 0, hx: 0, inv: [], mdd: 0, mwk: 0 });
 let dbgKind = null, gTab = 'zukan';
 function gItems() {
   return [
@@ -2851,6 +2854,92 @@ function claimGift(gf) {
   gSave({ ...g, gifts: [...g.gifts, gf.id], tix: g.tix + tix, shards: g.shards + Math.max(0, gf.shards || 0) });
   showToast('🎁 受け取りました！' + (tix < (gf.tix || 0) ? '（券は上限の10枚まで）' : ''));
   renderGacha();
+}
+
+/* ---------- ミッション ---------- */
+const MKEY = 'dbMis';
+const dayNoJ = () => Math.floor((Date.now() + 9 * 3600e3) / 86400000);
+const weekNoJ = () => Math.floor((dayNoJ() + 3) / 7); // 月曜はじまり(日本時間)
+const MIS_REWARD = { d: { tix: 1, sh: 3 }, w: { tix: 2, sh: 10 } };
+function misLoad() {
+  let m = {}; try { m = JSON.parse(localStorage.getItem(MKEY) || '{}') || {}; } catch (e) {}
+  const dn = dayNoJ(), wn = weekNoJ();
+  if (m.dn !== dn) { m.dn = dn; m.p = 0; m.dy = 0; m.hi = 0; }
+  if (m.wn !== wn) { m.wn = wn; m.wd = []; m.wp = 0; m.wo = 0; }
+  return m;
+}
+const misSave = m => { try { localStorage.setItem(MKEY, JSON.stringify(m)); } catch (e) {} };
+function misList(m) {
+  return {
+    d: [{ t: '今日、1回あそぶ', cur: m.p, goal: 1 }, { t: '「今日の1題」に挑戦する', cur: m.dy, goal: 1 }, { t: '高得点（7割以上）を出す', cur: m.hi, goal: 1 }],
+    w: [{ t: '今週、3日あそぶ', cur: m.wd.length, goal: 3 }, { t: '今週、合計10回あそぶ', cur: m.wp, goal: 10 }, { t: '友達とオンラインで1回あそぶ', cur: m.wo, goal: 1 }]
+  };
+}
+const misDone = L => L.every(x => x.cur >= x.goal);
+function misClaimed(k) { const g = gState(); return k === 'd' ? g.mdd === dayNoJ() : g.mwk === weekNoJ(); }
+function misCount(rec) {
+  try {
+    const m = misLoad(), before = misList(m), dn = dayNoJ();
+    m.p++; m.wp++;
+    if (rec.kind === 'daily') m.dy++;
+    if (rec.kind === 'online') m.wo++;
+    else {
+      const rounds = Math.max(1, rec.n || 1), max = rec.kind === 'guess' ? 100 : 30;
+      if ((rec.score || 0) / rounds / max >= 0.7) m.hi++;
+    }
+    if (!m.wd.includes(dn)) m.wd.push(dn);
+    misSave(m);
+    const after = misList(m);
+    ['d', 'w'].forEach(k => {
+      const was = misDone(before[k]), now = misDone(after[k]);
+      if (now && !was) showToast(k === 'd' ? '📋 デイリーミッション、ぜんぶ達成！' : '📋 ウィークリーミッション、ぜんぶ達成！', 'うけとる', showMis);
+    });
+    misBadge();
+    if ($('#scr-mis').classList.contains('active')) renderMis();
+  } catch (e) {}
+}
+function misBadge() {
+  const m = misLoad(), L = misList(m);
+  const n = ['d', 'w'].filter(k => misDone(L[k]) && !misClaimed(k)).length;
+  document.querySelectorAll('#mis-badge').forEach(b => { b.textContent = String(n); b.hidden = !n; });
+}
+function misClaim(k) {
+  if (NET.state !== 'ready' || !NET.gachaLoaded) { showToast('つながるまで少し待ってね'); return; }
+  const g = gState(), L = misList(misLoad())[k], rw = MIS_REWARD[k];
+  if (!misDone(L) || misClaimed(k)) return;
+  if (g.tix + rw.tix > MAX_TIX) { showToast('券が上限です。カプセルをひいてから受け取ってね'); return; }
+  gSave({ ...g, tix: g.tix + rw.tix, shards: g.shards + rw.sh, ...(k === 'd' ? { mdd: dayNoJ() } : { mwk: weekNoJ() }) });
+  SND.sfx('win');
+  showToast(`🎁 ガチャ券 ＋${rw.tix}・💎 ＋${rw.sh} をもらいました`, 'ひく', showGacha);
+  misBadge(); renderMis();
+}
+function renderMis() {
+  const m = misLoad(), L = misList(m), g = gState();
+  const card = (k, title, sub) => {
+    const rows = L[k], done = misDone(rows), got = misClaimed(k), rw = MIS_REWARD[k], full = g.tix + rw.tix > MAX_TIX;
+    return h('div', { class: 'card stack' },
+      h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('b', { style: 'font-size:18px' }, title), h('small', { style: 'font-weight:800;opacity:.8' }, sub)),
+      ...rows.map(x => {
+        const ok = x.cur >= x.goal, pct = Math.min(100, Math.round(x.cur / x.goal * 100));
+        return h('div', { style: 'display:flex;flex-direction:column;gap:4px' },
+          h('div', { style: 'display:flex;justify-content:space-between;font-weight:800' }, h('span', {}, (ok ? '✅ ' : '⬜ ') + x.t), h('span', {}, Math.min(x.cur, x.goal) + '/' + x.goal)),
+          h('div', { style: 'height:8px;border-radius:5px;background:rgba(27,27,47,.15);overflow:hidden', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(x.goal), 'aria-valuenow': String(Math.min(x.cur, x.goal)), 'aria-label': x.t },
+            h('div', { style: `height:100%;width:${pct}%;background:${ok ? '#38C172' : 'var(--accent,#FF8A3D)'}` })));
+      }),
+      h('small', { style: 'font-weight:800;text-align:center' }, `ぜんぶ達成で 🎟 券×${rw.tix} ・ 💎 カケラ×${rw.sh}`),
+      h('button', { class: 'btn primary', type: 'button', disabled: !done || got || full, onclick: () => misClaim(k) },
+        got ? '✅ 受け取りずみ' : !done ? 'ミッション中' : full ? '券が上限です（先にひいてね）' : '🎁 受け取る'));
+  };
+  fill($('#scr-mis'),
+    h('div', { class: 'row2', style: 'align-items:center' }, h('button', { class: 'btn small', type: 'button', onclick: () => { renderTitle(); go('title'); } }, '← もどる'),
+      h('h2', { style: 'margin:0 auto;font-size:22px' }, '📋 ミッション')),
+    card('d', 'デイリー', '毎日 0:00 にリセット'),
+    card('w', 'ウィークリー', '毎週 月曜 0:00 にリセット'),
+    h('small', { style: 'font-weight:800;opacity:.8;text-align:center' }, '進み具合は、この端末に保存されます。券は、ぜんぶで最大10枚までです。'));
+}
+function showMis() {
+  if (!PROFILE) { showReg(false); return; }
+  renderMis(); go('mis'); SND.bgm('menu');
 }
 function itemIcon(it) { return it.kind === 'stamp' ? stampLabel(it.def) : it.disp; }
 function showGacha() {
@@ -2995,7 +3084,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
 
-if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
+if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
 
 function boot(saved) {
   if (saved && typeof saved === 'object') {

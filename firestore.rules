@@ -14,6 +14,15 @@ service cloud.firestore {
       return x >= 14000 ? 15 : x >= 11000 ? 14 : x >= 8500 ? 13 : x >= 6500 ? 12 : x >= 4900 ? 11 : x >= 3600 ? 10
            : x >= 2600 ? 9 : x >= 1800 ? 8 : x >= 1200 ? 7 : x >= 800 ? 6 : x >= 500 ? 5 : x >= 300 ? 4 : x >= 150 ? 3 : x >= 50 ? 2 : 1;
     }
+    function dayNo() { return math.floor((request.time.toMillis() + 32400000) / 86400000); }
+    function weekNo() { return math.floor((dayNo() + 3) / 7); }
+    function gMisD(o, n) { return n.get('mdd', 0) != o.get('mdd', 0); }
+    function gMisW(o, n) { return n.get('mwk', 0) != o.get('mwk', 0); }
+    function gMisOk(o, n) {
+      return n.get('mdd', 0) is int && n.get('mwk', 0) is int
+          && (n.get('mdd', 0) == o.get('mdd', 0) || (n.get('mdd', 0) == dayNo() && o.get('mdd', 0) < dayNo()))
+          && (n.get('mwk', 0) == o.get('mwk', 0) || (n.get('mwk', 0) == weekNo() && o.get('mwk', 0) < weekNo()));
+    }
     function gDayGain(o, n) { return (n.day == jstDate() && o.day != n.day) ? 1 : 0; }
     function gLvGain(o, n) {
       return (n.lvg > o.lvg
@@ -27,7 +36,8 @@ service cloud.firestore {
           && n.pulls is int && n.pulls >= o.pulls && n.pulls - o.pulls <= 10
           && n.hx is int && n.hx >= 0 && n.hx <= 20
           && n.gifts is list && n.gifts.size() <= 200
-          && n.day is string && n.lvg is int && n.lvg >= o.lvg;
+          && n.day is string && n.lvg is int && n.lvg >= o.lvg
+          && gMisOk(o, n);
     }
     // ひいた回数ぶんだけ券が減り、ボーナス・カケラは1回ごとの上限まで
     // 招待ボーナス: 承認ずみのリンク申請の記録がある場合だけ(招待した人2枚・招待された人1枚)
@@ -37,9 +47,9 @@ service cloud.firestore {
         ? (q.get('to', '') == request.auth.uid ? 2 : (q.get('from', '') == request.auth.uid ? 1 : 0)) : 0;
     }
     function gPullOk(o, n, extraTix, extraShards) {
-      return n.tix + (n.pulls - o.pulls) <= o.tix + gDayGain(o, n) + gLvGain(o, n) + extraTix
+      return n.tix + (n.pulls - o.pulls) <= o.tix + gDayGain(o, n) + gLvGain(o, n) + extraTix + (gMisD(o, n) ? 1 : 0) + (gMisW(o, n) ? 2 : 0)
           && n.hx <= o.hx + (n.pulls - o.pulls)
-          && n.shards <= o.shards + 150 * (n.pulls - o.pulls) + extraShards;
+          && n.shards <= o.shards + 150 * (n.pulls - o.pulls) + extraShards + (gMisD(o, n) ? 3 : 0) + (gMisW(o, n) ? 10 : 0);
     }
 
     // ハートの現在値(時間回復ぶんを含む)
@@ -133,6 +143,7 @@ service cloud.firestore {
         && request.resource.data.own.size() == 0 && request.resource.data.gifts.size() == 0
         && (request.resource.data.day == '' || request.resource.data.day == jstDate())
         && request.resource.data.get('inv', []).size() == 0
+        && request.resource.data.get('mdd', 0) == 0 && request.resource.data.get('mwk', 0) == 0
         && request.resource.data.lvg == 1;
       allow update: if signedIn() && request.auth.uid == uid
         && gBase(resource.data, request.resource.data)
