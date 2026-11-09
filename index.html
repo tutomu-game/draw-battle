@@ -235,9 +235,19 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 @keyframes fxBig{0%{transform:scale(.1) rotate(-25deg);opacity:0}22%{transform:scale(1.15) rotate(5deg);opacity:1}70%{transform:scale(1) rotate(0);opacity:1}100%{transform:scale(1.6);opacity:0}}
 .fx-flash{position:fixed;inset:0;z-index:59;pointer-events:none;border:10px solid #ff3b30;animation:fxFlash 1.6s linear forwards}
 @keyframes fxFlash{0%{opacity:0;filter:hue-rotate(0)}15%{opacity:1}100%{opacity:0;filter:hue-rotate(360deg)}}
+.fx-dark{position:fixed;inset:0;z-index:58;background:#000;pointer-events:none;animation:fxDark 4.2s ease forwards;opacity:0}
+@keyframes fxDark{0%{opacity:0}8%{opacity:.8}86%{opacity:.8}100%{opacity:0}}
+.fx-rays{position:fixed;left:50%;top:50%;width:170vmax;height:170vmax;margin:-85vmax 0 0 -85vmax;z-index:59;pointer-events:none;background:repeating-conic-gradient(from 0deg,rgba(255,210,63,.6) 0 7deg,transparent 7deg 18deg);-webkit-mask-image:radial-gradient(circle,#000 0,transparent 55%);mask-image:radial-gradient(circle,#000 0,transparent 55%);animation:fxRays 4.2s linear forwards;opacity:0}
+@keyframes fxRays{0%{opacity:0;transform:rotate(0) scale(.3)}15%{opacity:1}86%{opacity:1}100%{opacity:0;transform:rotate(100deg) scale(1.2)}}
+.fx-dragon{position:fixed;z-index:62;left:0;top:34%;font-size:min(58vw,250px);line-height:1;pointer-events:none;filter:drop-shadow(0 0 22px #FFD23F);animation:fxDragon 2.7s cubic-bezier(.35,.1,.3,1) .5s forwards;transform:translate(-130%,20vh)}
+@keyframes fxDragon{0%{transform:translate(-130%,20vh) rotate(-10deg) scale(.8)}30%{transform:translate(8vw,-8vh) rotate(8deg) scale(1.1)}60%{transform:translate(42vw,10vh) rotate(-6deg) scale(1.2)}100%{transform:translate(135vw,-12vh) rotate(10deg) scale(1)}}
+.fx-secret{position:fixed;inset:0;z-index:63;display:grid;place-items:center;pointer-events:none;text-align:center;align-content:center}
+.fx-secret b{display:block;font-family:var(--f-display);font-weight:400;font-size:min(17vw,84px);color:#FFD23F;letter-spacing:.1em;text-shadow:0 0 20px #FF9500,0 4px 0 #7a4b00;opacity:0;animation:fxSec 3s ease .9s forwards}
+.fx-secret small{display:block;font-size:min(7vw,30px);font-weight:900;color:#fff;margin-top:8px;text-shadow:0 2px 6px #000;opacity:0;animation:fxSec 3s ease 1.2s forwards}
+@keyframes fxSec{0%{opacity:0;transform:scale(.3)}20%{opacity:1;transform:scale(1.15)}30%{transform:scale(1)}85%{opacity:1}100%{opacity:0}}
 body.fx-shake{animation:fxShake .45s linear 3}
 @keyframes fxShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(6px,-4px)}60%{transform:translate(-5px,-3px)}80%{transform:translate(5px,4px)}}
-@media (prefers-reduced-motion: reduce){.fx-p,.fx-big,.fx-flash{display:none}.stp.fx-pop,.stp.fx-wob,.stp.r-sec{animation:none}body.fx-shake{animation:none}}
+@media (prefers-reduced-motion: reduce){.fx-p,.fx-big,.fx-flash,.fx-dark,.fx-rays,.fx-dragon,.fx-secret{display:none}.stp.fx-pop,.stp.fx-wob,.stp.r-sec{animation:none}body.fx-shake{animation:none}}
 .stp{display:inline-flex;align-items:center;gap:4px;border:2.5px solid var(--ink);border-radius:999px;background:#fff;padding:3px 9px;font-size:18px;line-height:1.3;cursor:pointer;touch-action:manipulation;color:var(--ink);font-family:inherit}
 .stp .ct{font-family:var(--f-display);font-size:13px}
 .stp .ct:empty{display:none}
@@ -1474,6 +1484,20 @@ function rainFx(txt, n, color, size) {
   for (let i = 0; i < n; i++) part(Math.random() * innerWidth, -20 - Math.random() * 60, txt, { dy: innerHeight + 60, dx: (Math.random() - 0.5) * 60, rot: (Math.random() - 0.5) * 80, size: (size || 28) * (0.7 + Math.random() * 0.8), sc: 1, dur: 1.4 + Math.random() * 0.8, del: Math.random() * 0.8, color });
 }
 function shakeFx() { document.body.classList.add('fx-shake'); setTimeout(() => document.body.classList.remove('fx-shake'), 1400); }
+function secretFx(def) {
+  const [, txt] = def, els = [];
+  const add = e => { document.body.append(e); els.push(e); return e; };
+  add(h('div', { class: 'fx-dark', 'aria-hidden': 'true' })); add(h('div', { class: 'fx-rays', 'aria-hidden': 'true' }));
+  const dr = add(h('div', { class: 'fx-dragon', 'aria-hidden': 'true' }, txt));
+  add(h('div', { class: 'fx-secret', 'aria-hidden': 'true' }, h('div', {}, h('b', {}, 'SECRET'), h('small', {}, 'シークレット「龍」発動！'))));
+  shakeFx();
+  try { navigator.vibrate && navigator.vibrate([80, 40, 80, 40, 220]); } catch (e) {}
+  SND.sfx('win'); setTimeout(() => SND.sfx('win'), 700);
+  setTimeout(() => rainFx('🪙', 22, null, 30), 400); setTimeout(() => rainFx('⭐', 22, null, 30), 1200); setTimeout(() => rainFx('✨', 26, null, 30), 2000);
+  const tr = setInterval(() => { const r = dr.getBoundingClientRect(); if (r.width) part(r.left + r.width * (0.2 + Math.random() * 0.5), r.top + r.height * (0.3 + Math.random() * 0.5), ['✨', '⭐', '🔥'][Math.floor(Math.random() * 3)], { dx: (Math.random() - 0.5) * 120, dy: 60 + Math.random() * 80, rot: 180, sc: 1.4, size: 24 + Math.random() * 14, dur: 0.9 }); }, 70);
+  setTimeout(() => clearInterval(tr), 3300);
+  setTimeout(() => els.forEach(e => e.remove()), 4400);
+}
 function playStampFx(btn, def) {
   SND.sfx('tap');
   const [, txt, , rar, fx, col] = def;
@@ -1488,7 +1512,7 @@ function playStampFx(btn, def) {
     case 'burst': cls('fx-pop'); for (let i = 0; i < 16; i++) { const a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 90; part(cx - 10, cy + 10, ['✨', txt, '🎉', '⭐'][i % 4], { dx: Math.cos(a) * d, dy: Math.sin(a) * d - 40, rot: Math.random() * 360, sc: 1.4, size: 22 + Math.random() * 12, dur: 1.1 }); } break;
     case 'rain': cls('fx-pop'); rainFx(txt, 18, col, 30); break;
     case 'screen': bigFx(txt, col, true); rainFx(txt === '💯' ? '💯' : 'w', 26, col, 30); if (txt === '💯') for (let i = 0; i < 14; i++) part(innerWidth / 2, innerHeight / 2, ['🎆', '✨', '🎇'][i % 3], { dx: (Math.random() - 0.5) * innerWidth, dy: (Math.random() - 0.5) * innerHeight, rot: 90, sc: 1.6, size: 34, dur: 1.2, del: 0.3 }); break;
-    case 'quake': shakeFx(); bigFx(txt, col, true); rainFx('✨', 30, '#FFD23F', 30); rainFx('⭐', 14, '#FFD23F', 34); break;
+    case 'quake': secretFx(def); break;
     default: flyEmoji(btn, typeof txt === 'string' ? txt : '');
   }
 }
