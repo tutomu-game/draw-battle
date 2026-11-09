@@ -817,7 +817,7 @@ function startGame() {
   S.players = Array.from({ length: n }, (_, i) => ((solo ? S.soloName : S.names[i]) || (i === 0 ? mine : '') || '').trim().slice(0, 8) || (solo ? 'あなた' : 'プレイヤー' + (i + 1)));
   S.total = solo ? S.soloRounds : S.rounds;
   S.totals = Array(n).fill(0);
-  S.history = []; S.used = new Set(); S.round = 0; S.lastJudge = null; S.lastRule = null;
+  S.history = []; S.used = new Set(); S.round = 0; S.lastJudge = null; S.lastRule = null; S.gameSeq = (S.gameSeq || 0) + 1;
   newRound();
 }
 
@@ -1178,7 +1178,7 @@ function showJudge() {
     badge(c.judge, true),
     h('h2', { style: 'font-size:26px' }, solo ? '描き終わり！' : '全員描き終わり！'),
     h('p', {}, S.mode === 'guess' ? `審査員の「${c.judge.name}」が、何を描いたか当てます。` : `審査員の「${c.judge.name}」が絵を見てくれます。`),
-    needsHeart() ? h('p', { style: 'text-align:center' }, '審査にはハートを1つ使います', h('br'), heartsEl(true)) : null,
+    S.mode !== 'daily' ? h('p', { style: 'text-align:center' }, heartPaidFor === heartGameKey() ? 'このゲームのハートは使用ずみです' : '1ゲームの審査で、ハートを1つ使います', h('br'), heartsEl(true)) : null,
     h('div', { class: 'grow' }),
     h('button', { class: 'btn primary big', type: 'button', onclick: runJudging }, S.mode === 'guess' ? '当ててもらう！' : '審査してもらう！')
   );
@@ -1408,7 +1408,11 @@ function heartState() {
   const nextMs = eff >= HEART_MAX || !at ? 0 : HEART_MS - ((now - at) % HEART_MS);
   return { hp, at, eff, nextMs };
 }
-const needsHeart = () => S.mode !== 'daily';
+let heartPaidFor = '';
+const heartGameKey = () => (S.online && G.game ? `o_${G.code}_${G.game.gen}` : 'l_' + (S.gameSeq || 0));
+// ハートは「1ゲーム(全ラウンド)で1つ」。今日の1題は使わない
+const needsHeart = () => S.mode !== 'daily' && heartPaidFor !== heartGameKey();
+const chargeHeart = () => { if (S.mode !== 'daily' && heartPaidFor !== heartGameKey()) { spendHeart(); heartPaidFor = heartGameKey(); } };
 function fmtMs(ms) { const t = Math.ceil(ms / 1000), m = Math.floor(t / 60), sec = t % 60; return m + ':' + String(sec).padStart(2, '0'); }
 function heartsEl(withTimer) {
   const st = heartState();
@@ -1461,7 +1465,7 @@ async function runJudging() {
   const stop = judgeLoading();
   let ai = null;
   try {
-    if (sent.length) { ai = await askAI(sent); if (needsHeart()) spendHeart(); }
+    if (sent.length) { ai = await askAI(sent); chargeHeart(); }
     if (S.ai.state === 'quota') { S.ai.state = 'ready'; updateAiStatus(); }
   } catch (err) {
     stop(); judgeError(err); return;
@@ -2407,7 +2411,7 @@ function renderWaitDrawings() {
 async function hostJudge(retry) {
   const d = G.game;
   if (G.judging && !retry) return;
-  if (heartState().eff <= 0) { go('judge'); heartsEmpty(() => hostJudge(true)); return; }
+  if (needsHeart() && heartState().eff <= 0) { go('judge'); heartsEmpty(() => hostJudge(true)); return; }
   G.judging = true;
   if (!retry) await gameUpdate({ phase: 'judging' });
   S.cur.drawings = d.order.map(u => {
@@ -2418,7 +2422,7 @@ async function hostJudge(retry) {
   const stop = judgeLoading();
   const sent = S.cur.drawings.map((x, i) => i).filter(i => !S.cur.drawings[i].blank);
   let ai = null;
-  try { if (sent.length) { ai = await askAI(sent); spendHeart(); } }
+  try { if (sent.length) { ai = await askAI(sent); chargeHeart(); } }
   catch (err) { stop(); judgeError(err, () => hostJudge(true), null); return; }
   stop();
   try {
