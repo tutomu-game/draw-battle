@@ -1996,7 +1996,7 @@ function startNet() {
   NET.started = true;
   const { db, me } = NET, bad = () => {};
   startGacha();
-  db.collection('players').onSnapshot(sn => { const m = {}; sn.docs.forEach(d => { m[d.id] = d.data(); }); NET.players = m; refreshOnline(); refreshRankCard(); if (PROFILE) updateChip(); autoGrants(); }, bad);
+  db.collection('players').onSnapshot(sn => { const m = {}; sn.docs.forEach(d => { m[d.id] = d.data(); }); NET.players = m; refreshOnline(); refreshRankCard(); if (PROFILE) updateChip(); autoGrants(); processPendingFriend(); }, bad);
   db.doc(`data/users/${me}/friends`).onSnapshot(sn => { NET.friends = sn.exists && Array.isArray(sn.data().ids) ? sn.data().ids : []; refreshOnline(); }, bad);
   db.collection('requests').where('to', '==', me).onSnapshot(sn => { NET.reqIn = sn.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.status === 'pending'); notifyNewRequests(); updateOnlineBadge(); refreshOnline(); }, bad);
   db.collection('requests').where('from', '==', me).onSnapshot(sn => { NET.reqOut = sn.docs.map(d => ({ id: d.id, ...d.data() })); handleAccepted(); refreshOnline(); }, bad);
@@ -2052,6 +2052,43 @@ function startRoom() {
     inviteModal(msg.by, d.code);
   });
   r.presence({ app: 'drawbattle' });
+}
+
+/* --- 友達招待リンク (?f=コード) --- */
+(function () {
+  try {
+    const m = location.search.match(/[?&]f=([A-Za-z0-9]{6})(?:&|$)/);
+    if (m) { localStorage.setItem('dbPendingFriend', m[1].toUpperCase()); history.replaceState(null, '', location.pathname + location.hash); }
+  } catch (e) {}
+})();
+let pfBusy = false;
+function inviteLink(code) { return location.origin + location.pathname + '?f=' + code; }
+function shareInviteLink(code) {
+  const url = inviteLink(code);
+  if (navigator.share) navigator.share({ title: 'お絵描きバトル', text: 'いっしょに絵で対戦しよう！友達になってね', url }).catch(() => {});
+  else copyText(url);
+}
+function processPendingFriend() {
+  let code = ''; try { code = localStorage.getItem('dbPendingFriend') || ''; } catch (e) {}
+  if (!code || pfBusy || NET.state !== 'ready' || !PROFILE || !NET.players[NET.me]) return;
+  const clear = () => { try { localStorage.removeItem('dbPendingFriend'); } catch (e) {} };
+  const entry = Object.entries(NET.players).find(([, p]) => p && p.code === code);
+  if (!entry) { clear(); showToast('この招待リンクの人が見つかりませんでした'); return; }
+  const [uid, p] = entry;
+  if (uid === NET.me) { clear(); showToast('これはあなた自身の招待リンクです'); return; }
+  if (NET.friends.includes(uid)) { clear(); showToast(`${p.name}さんとはもう友達です`); return; }
+  pfBusy = true;
+  const close = () => { const m = $('#fr-modal'); if (m) m.remove(); pfBusy = false; clear(); };
+  const modal = h('div', { id: 'fr-modal', role: 'alertdialog', 'aria-modal': 'true', 'aria-label': p.name + 'さんからの友達招待', style: 'position:fixed;inset:0;z-index:70;background:rgba(27,27,47,.65);display:flex;align-items:center;justify-content:center;padding:18px' },
+    h('div', { class: 'card stack', style: 'max-width:340px;width:100%;text-align:center;background:#fff' },
+      h('span', { style: 'font-size:56px;line-height:1', 'aria-hidden': 'true' }, '🤝'),
+      h('div', { style: 'display:flex;justify-content:center' }, avatar(p.shape || 0, 44, true)),
+      h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:22px' }, p.name + 'さんから友達の招待！'),
+      h('p', { style: 'font-weight:800' }, '友達になると、いっしょにオンラインで対戦できます'),
+      h('button', { class: 'btn primary big', type: 'button', onclick: async () => { const r = await addFriendByCode(code); close(); showToast(r.msg); } }, '友達になる'),
+      h('button', { class: 'btn', type: 'button', onclick: close }, 'やめておく')));
+  document.body.append(modal);
+  SND.sfx('go');
 }
 
 /* --- friends --- */
@@ -2144,7 +2181,8 @@ function renderOnline() {
     h('div', { class: 'nrow' }, avatar(PROFILE.shape, 40, true), h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:18px' }, PROFILE.name)),
     h('div', { class: 'codebox' }, myCode || '準備中…'),
     h('button', { class: 'btn small', type: 'button', disabled: !myCode, onclick: () => copyText(myCode) }, 'コードをコピー'),
-    h('p', { class: 'gline' }, 'このコードを友達に教えると、友達にリクエストを送ってもらえます。'));
+    h('button', { class: 'btn small blue', type: 'button', disabled: !myCode, onclick: () => shareInviteLink(myCode) }, '🔗 招待リンクをシェア'),
+    h('p', { class: 'gline' }, 'このコードか招待リンクを友達に送ると、友達にリクエストを送ってもらえます。'));
 
   const reqs = NET.reqIn.length ? h('div', { class: 'card stack' },
     h('h3', { class: 'sec' }, `友達リクエスト（${NET.reqIn.length}）`),
