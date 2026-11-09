@@ -2065,7 +2065,7 @@ let pfBusy = false;
 function inviteLink(code) { return location.origin + location.pathname + '?f=' + code; }
 function shareInviteLink(code) {
   const url = inviteLink(code);
-  if (navigator.share) navigator.share({ title: 'お絵描きバトル', text: 'いっしょに絵で対戦しよう！友達になってね', url }).catch(() => {});
+  if (navigator.share) navigator.share({ title: 'お絵描きバトル', text: 'いっしょに絵で対戦しよう！友達になるとガチャ券がもらえるよ', url }).catch(() => {});
   else copyText(url);
 }
 function processPendingFriend() {
@@ -2085,7 +2085,8 @@ function processPendingFriend() {
       h('div', { style: 'display:flex;justify-content:center' }, avatar(p.shape || 0, 44, true)),
       h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:22px' }, p.name + 'さんから友達の招待！'),
       h('p', { style: 'font-weight:800' }, '友達になると、いっしょにオンラインで対戦できます'),
-      h('button', { class: 'btn primary big', type: 'button', onclick: async () => { const r = await addFriendByCode(code); close(); showToast(r.msg); } }, '友達になる'),
+      h('p', { style: 'font-weight:900;color:#E0391F' }, '🎁 友達になると、あなたはガチャ券1枚、' + p.name + 'さんは2枚もらえます！'),
+      h('button', { class: 'btn primary big', type: 'button', onclick: async () => { const r = await addFriendByCode(code, 'link'); close(); showToast(r.msg); } }, '友達になる'),
       h('button', { class: 'btn', type: 'button', onclick: close }, 'やめておく')));
   document.body.append(modal);
   SND.sfx('go');
@@ -2103,10 +2104,12 @@ function handleAccepted() {
   NET.reqOut.filter(r => r.status === 'accepted' && !doneReq.has(r.id)).forEach(r => {
     doneReq.add(r.id);
     if (!NET.friends.includes(r.to)) saveFriends([...NET.friends, r.to]);
-    NET.db.doc('requests/' + r.id).delete().catch(() => {});
+    if (r.via === 'link') gClaimInvite(r.id, 'invitee').then(inviteBonusToast).catch(() => {});
+    // 招待ボーナスの確認に使うので、少し待ってから消す
+    setTimeout(() => NET.db.doc('requests/' + r.id).delete().catch(() => {}), 20000);
   });
 }
-async function addFriendByCode(raw) {
+async function addFriendByCode(raw, via) {
   const code = String(raw || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{6}$/.test(code)) return { ok: false, msg: '友達コードは6文字です' };
   try {
@@ -2117,7 +2120,7 @@ async function addFriendByCode(raw) {
     if (NET.friends.includes(t)) return { ok: false, msg: 'すでに友達です' };
     const incoming = NET.reqIn.find(r => r.from === t);
     if (incoming) { await approveFriend(incoming); return { ok: true, msg: `${nameOf(t)}さんと友達になりました` }; }
-    await NET.db.doc(`requests/${t}__${NET.me}`).set({ to: t, from: NET.me, status: 'pending', ts: Date.now() });
+    await NET.db.doc(`requests/${t}__${NET.me}`).set({ to: t, from: NET.me, status: 'pending', ts: Date.now(), ...(via ? { via } : {}) });
     return { ok: true, msg: `${q.docs[0].data().name}さんにリクエストを送りました` };
   } catch (e) { return { ok: false, msg: '送信できませんでした。しばらくしてからもう一度試してね' }; }
 }
@@ -2125,7 +2128,8 @@ async function approveFriend(r) {
   try {
     await NET.db.doc('requests/' + r.id).update({ status: 'accepted' });
     if (!NET.friends.includes(r.from)) await saveFriends([...NET.friends, r.from]);
-  } catch (e) { showToast('承認できませんでした'); }
+  } catch (e) { showToast('承認できませんでした'); return; }
+  if (r.via === 'link') gClaimInvite(r.id, 'inviter').then(inviteBonusToast).catch(() => {});
 }
 function ignoreFriend(r) { NET.db.doc('requests/' + r.id).delete().catch(() => {}); }
 function removeFriend(id) { saveFriends(NET.friends.filter(f => f !== id)); }
@@ -2182,7 +2186,7 @@ function renderOnline() {
     h('div', { class: 'codebox' }, myCode || '準備中…'),
     h('button', { class: 'btn small', type: 'button', disabled: !myCode, onclick: () => copyText(myCode) }, 'コードをコピー'),
     h('button', { class: 'btn small blue', type: 'button', disabled: !myCode, onclick: () => shareInviteLink(myCode) }, '🔗 招待リンクをシェア'),
-    h('p', { class: 'gline' }, 'このコードか招待リンクを友達に送ると、友達にリクエストを送ってもらえます。'));
+    h('p', { class: 'gline' }, 'このコードか招待リンクを友達に送ると、友達にリクエストを送ってもらえます。招待リンクから友達になると、あなたはガチャ券2枚、友達は1枚もらえます（1人10回まで）。'));
 
   const reqs = NET.reqIn.length ? h('div', { class: 'card stack' },
     h('h3', { class: 'sec' }, `友達リクエスト（${NET.reqIn.length}）`),
@@ -2758,7 +2762,7 @@ const MAX_TIX = 10;
 const RAR_ORDER = ['r', 'sr', 'hr', 'lr', 'sec'];
 const RAR_STAR = { r: '★ レア', sr: '★★ スーパーレア', hr: '★★★ ハイパーレア', lr: '★★★★ レジェンドレア', sec: '？？？ シークレット' };
 const RAR_COL = { r: '#6FB1FF', sr: '#FFC933', hr: '#C28BFF', lr: '#FF8A3D', sec: '#FFD23F' };
-const GDEF = () => ({ tix: 0, shards: 0, own: [], day: '', lvg: 1, gifts: [], pulls: 0, hx: 0 });
+const GDEF = () => ({ tix: 0, shards: 0, own: [], day: '', lvg: 1, gifts: [], pulls: 0, hx: 0, inv: [] });
 let dbgKind = null, gTab = 'zukan';
 function gItems() {
   return [
@@ -2772,7 +2776,17 @@ function gSave(next) {
   NET.gacha = next; NET.gachaExists = true;
   if (NET.state === 'ready') pushing = pushing.then(() => NET.db.doc('gacha/' + NET.me).set(next)).catch(() => {});
   gUpdateBadge();
+  return pushing;
 }
+// 招待ボーナス: 招待した人=2枚、招待された人=1枚(1人10回まで)
+async function gClaimInvite(reqId, role) {
+  const g = gState();
+  if (g.inv.includes(reqId) || g.inv.length >= 10) return 0;
+  const add = Math.min(role === 'inviter' ? 2 : 1, MAX_TIX - g.tix);
+  await gSave({ ...g, inv: [...g.inv, reqId], tix: g.tix + add });
+  return add;
+}
+function inviteBonusToast(n) { showToast(n > 0 ? `🎁 招待ボーナス！ガチャ券 ＋${n}` : '🎁 招待ボーナスは、券が上限(10枚)のため受け取れませんでした', 'ひく', showGacha); }
 function giftsAvail() {
   const g = gState();
   return (NET.gifts || []).filter(x => !g.gifts.includes(x.id) && (!x.until || x.until > Date.now()));

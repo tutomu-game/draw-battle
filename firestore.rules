@@ -30,6 +30,12 @@ service cloud.firestore {
           && n.day is string && n.lvg is int && n.lvg >= o.lvg;
     }
     // ひいた回数ぶんだけ券が減り、ボーナス・カケラは1回ごとの上限まで
+    // 招待ボーナス: 承認ずみのリンク申請の記録がある場合だけ(招待した人2枚・招待された人1枚)
+    function gInvTix(id) {
+      let q = get(/databases/$(database)/documents/requests/$(id)).data;
+      return (q.get('via', '') == 'link' && q.get('status', '') == 'accepted')
+        ? (q.get('to', '') == request.auth.uid ? 2 : (q.get('from', '') == request.auth.uid ? 1 : 0)) : 0;
+    }
     function gPullOk(o, n, extraTix, extraShards) {
       return n.tix + (n.pulls - o.pulls) <= o.tix + gDayGain(o, n) + gLvGain(o, n) + extraTix
           && n.hx <= o.hx + (n.pulls - o.pulls)
@@ -126,6 +132,7 @@ service cloud.firestore {
         && request.resource.data.shards == 0 && request.resource.data.pulls == 0 && request.resource.data.hx == 0
         && request.resource.data.own.size() == 0 && request.resource.data.gifts.size() == 0
         && (request.resource.data.day == '' || request.resource.data.day == jstDate())
+        && request.resource.data.get('inv', []).size() == 0
         && request.resource.data.lvg == 1;
       allow update: if signedIn() && request.auth.uid == uid
         && gBase(resource.data, request.resource.data)
@@ -136,7 +143,13 @@ service cloud.firestore {
              && !resource.data.gifts.hasAny([request.resource.data.gifts[request.resource.data.gifts.size() - 1]])
              && gPullOk(resource.data, request.resource.data,
                   get(/databases/$(database)/documents/gifts/$(request.resource.data.gifts[request.resource.data.gifts.size() - 1])).data.get('tix', 0),
-                  get(/databases/$(database)/documents/gifts/$(request.resource.data.gifts[request.resource.data.gifts.size() - 1])).data.get('shards', 0))));
+                  get(/databases/$(database)/documents/gifts/$(request.resource.data.gifts[request.resource.data.gifts.size() - 1])).data.get('shards', 0)))
+          || (request.resource.data.gifts.size() == resource.data.gifts.size()
+             && request.resource.data.inv.size() == resource.data.get('inv', []).size() + 1
+             && request.resource.data.inv.size() <= 10
+             && request.resource.data.inv.hasAll(resource.data.get('inv', []))
+             && !resource.data.get('inv', []).hasAny([request.resource.data.inv[request.resource.data.inv.size() - 1]])
+             && gPullOk(resource.data, request.resource.data, gInvTix(request.resource.data.inv[request.resource.data.inv.size() - 1]), 0)));
     }
     // 運営からのプレゼント: 読むだけ(作るのは運営がコンソールから)
     match /gifts/{id} {
