@@ -1,8 +1,8 @@
 // お絵描きバトル Service Worker
 // 方針: ページ本体は「ネット優先」(更新がすぐ届く)、つながらない時だけ保存済みを使う。
 // AI中継(Cloudflare)とFirebase(通信)は一切キャッシュしない。
-const CACHE = 'draw-battle-v2';
-const SHELL = ['./', 'index.html', 'config.js', 'fb-shim.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+const CACHE = 'draw-battle-v3';
+const SHELL = ['./', 'index.html', 'config.js', 'fb-shim.js', 'events.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

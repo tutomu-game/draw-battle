@@ -23,6 +23,11 @@ service cloud.firestore {
           && (n.get('mdd', 0) == o.get('mdd', 0) || (n.get('mdd', 0) == dayNo() && o.get('mdd', 0) < dayNo()))
           && (n.get('mwk', 0) == o.get('mwk', 0) || (n.get('mwk', 0) == weekNo() && o.get('mwk', 0) < weekNo()));
     }
+    function gEvSame(o, n) { return n.get('evs', []).size() == o.get('evs', []).size(); }
+    function gEvOk(id) {
+      let e = get(/databases/$(database)/documents/events/$(id)).data;
+      return e.start <= jstDate() && jstDate() <= e.end;
+    }
     function gDayGain(o, n) { return (n.day == jstDate() && o.day != n.day) ? 1 : 0; }
     function gLvGain(o, n) {
       return (n.lvg > o.lvg
@@ -37,6 +42,7 @@ service cloud.firestore {
           && n.hx is int && n.hx >= 0 && n.hx <= 20
           && n.gifts is list && n.gifts.size() <= 200
           && n.day is string && n.lvg is int && n.lvg >= o.lvg
+          && n.get('evs', []) is list && n.get('evs', []).size() <= 50
           && gMisOk(o, n);
     }
     // ひいた回数ぶんだけ券が減り、ボーナス・カケラは1回ごとの上限まで
@@ -143,27 +149,43 @@ service cloud.firestore {
         && request.resource.data.own.size() == 0 && request.resource.data.gifts.size() == 0
         && (request.resource.data.day == '' || request.resource.data.day == jstDate())
         && request.resource.data.get('inv', []).size() == 0
+        && request.resource.data.get('evs', []).size() == 0
         && request.resource.data.get('mdd', 0) == 0 && request.resource.data.get('mwk', 0) == 0
         && request.resource.data.lvg == 1;
       allow update: if signedIn() && request.auth.uid == uid
         && gBase(resource.data, request.resource.data)
         && ((request.resource.data.gifts.size() == resource.data.gifts.size()
+             && gEvSame(resource.data, request.resource.data)
              && gPullOk(resource.data, request.resource.data, 0, 0))
           || (request.resource.data.gifts.size() == resource.data.gifts.size() + 1
+             && gEvSame(resource.data, request.resource.data)
              && request.resource.data.gifts.hasAll(resource.data.gifts)
              && !resource.data.gifts.hasAny([request.resource.data.gifts[request.resource.data.gifts.size() - 1]])
              && gPullOk(resource.data, request.resource.data,
                   get(/databases/$(database)/documents/gifts/$(request.resource.data.gifts[request.resource.data.gifts.size() - 1])).data.get('tix', 0),
                   get(/databases/$(database)/documents/gifts/$(request.resource.data.gifts[request.resource.data.gifts.size() - 1])).data.get('shards', 0)))
           || (request.resource.data.gifts.size() == resource.data.gifts.size()
+             && gEvSame(resource.data, request.resource.data)
              && request.resource.data.inv.size() == resource.data.get('inv', []).size() + 1
              && request.resource.data.inv.size() <= 10
              && request.resource.data.inv.hasAll(resource.data.get('inv', []))
              && !resource.data.get('inv', []).hasAny([request.resource.data.inv[request.resource.data.inv.size() - 1]])
-             && gPullOk(resource.data, request.resource.data, gInvTix(request.resource.data.inv[request.resource.data.inv.size() - 1]), 0)));
+             && gPullOk(resource.data, request.resource.data, gInvTix(request.resource.data.inv[request.resource.data.inv.size() - 1]), 0))
+          || (request.resource.data.gifts.size() == resource.data.gifts.size()
+             && request.resource.data.get('evs', []).size() == resource.data.get('evs', []).size() + 1
+             && request.resource.data.evs.hasAll(resource.data.get('evs', []))
+             && !resource.data.get('evs', []).hasAny([request.resource.data.evs[request.resource.data.evs.size() - 1]])
+             && gEvOk(request.resource.data.evs[request.resource.data.evs.size() - 1])
+             && gPullOk(resource.data, request.resource.data,
+                  get(/databases/$(database)/documents/events/$(request.resource.data.evs[request.resource.data.evs.size() - 1])).data.get('tix', 0),
+                  get(/databases/$(database)/documents/events/$(request.resource.data.evs[request.resource.data.evs.size() - 1])).data.get('shards', 0))));
     }
     // 運営からのプレゼント: 読むだけ(作るのは運営がコンソールから)
     match /gifts/{id} {
+      allow read: if signedIn();
+    }
+    // イベント: 読むだけ(開催の鍵。作るのは運営がコンソールから)
+    match /events/{id} {
       allow read: if signedIn();
     }
     match /reports/{id} {
