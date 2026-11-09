@@ -193,6 +193,15 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 .sw{flex:0 0 calc((100% - 42px) / 8);max-width:44px;aspect-ratio:1;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer;padding:0;font-family:var(--f-display);font-size:13px;color:var(--ink);touch-action:manipulation}
 .sw[aria-pressed="true"]{transform:scale(1.18);box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--ink)}
 .row2{display:flex;gap:8px;align-items:center}
+.badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:8px;border-radius:999px;background:#E0391F;color:#fff;border:2px solid #fff;font-size:13px;font-weight:900;vertical-align:middle;animation:badgePulse 1.4s ease-in-out infinite}
+.badge[hidden]{display:none}
+@keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+#inv-modal{position:fixed;inset:0;z-index:70;background:rgba(27,27,47,.65);display:flex;align-items:center;justify-content:center;padding:18px}
+#inv-modal .inv{max-width:340px;width:100%;text-align:center;background:#fff;animation:invIn .45s cubic-bezier(.2,1.4,.4,1)}
+#inv-modal .inv .env{font-size:64px;line-height:1;display:inline-block;animation:envWob 1s ease-in-out infinite}
+@keyframes invIn{0%{transform:scale(.4) translateY(40px);opacity:0}100%{transform:none;opacity:1}}
+@keyframes envWob{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg) scale(1.1)}}
+@media (prefers-reduced-motion: reduce){.badge,#inv-modal .inv,#inv-modal .inv .env{animation:none}}
 .pens{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 6px}
 .pn{min-width:44px;height:40px;display:grid;place-items:center;border:3px solid var(--ink);border-radius:12px;background:var(--paper);cursor:pointer;padding:0 8px;font-size:18px;touch-action:manipulation}
 .pn[aria-pressed="true"]{background:var(--soft);box-shadow:2px 2px 0 var(--ink)}
@@ -735,10 +744,11 @@ function renderSetup() {
         seg([[true, 'あり'], [false, 'なし']], SND.st.sfx, v => SND.set('sfx', v), '効果音'))),
     status, start);
 
-  const onlineBtn = h('button', { class: 'btn blue big', type: 'button', onclick: showOnline }, 'オンラインで遊ぶ（友達と）');
+  const onlineBtn = h('button', { class: 'btn blue big', type: 'button', onclick: showOnline }, 'オンラインで遊ぶ（友達と）', h('span', { class: 'badge', id: 'online-badge', hidden: true, 'aria-label': '未確認のお知らせ' }));
   const histBtn = h('button', { class: 'btn small', type: 'button', style: 'align-self:center', onclick: showHistory }, '📜 せんれき');
   const legal = h('p', { style: 'text-align:center;font-size:12px;font-weight:800;opacity:.8' },
     h('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, '利用規約'), ' ・ ', h('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, 'プライバシーポリシー'));
+  updateOnlineBadge(onlineBtn);
   fill(dyn, rankCard(), dailyBtn(), onlineBtn, modeCard, howEl, setup, histBtn, installHint(), legal);
   updateAiStatus();
 }
@@ -1869,8 +1879,49 @@ function startNet() {
   const { db, me } = NET, bad = () => {};
   db.collection('players').onSnapshot(sn => { const m = {}; sn.docs.forEach(d => { m[d.id] = d.data(); }); NET.players = m; refreshOnline(); refreshRankCard(); if (PROFILE) updateChip(); }, bad);
   db.doc(`data/users/${me}/friends`).onSnapshot(sn => { NET.friends = sn.exists && Array.isArray(sn.data().ids) ? sn.data().ids : []; refreshOnline(); }, bad);
-  db.collection('requests').where('to', '==', me).onSnapshot(sn => { NET.reqIn = sn.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.status === 'pending'); refreshOnline(); }, bad);
+  db.collection('requests').where('to', '==', me).onSnapshot(sn => { NET.reqIn = sn.docs.map(d => ({ id: d.id, ...d.data() })).filter(r => r.status === 'pending'); notifyNewRequests(); updateOnlineBadge(); refreshOnline(); }, bad);
   db.collection('requests').where('from', '==', me).onSnapshot(sn => { NET.reqOut = sn.docs.map(d => ({ id: d.id, ...d.data() })); handleAccepted(); refreshOnline(); }, bad);
+}
+
+/* --- お知らせ(招待・友達申請) --- */
+function updateOnlineBadge(root) {
+  const b = (root || document).querySelector('#online-badge');
+  if (!b) return;
+  const n = (NET.reqIn || []).length + (NET.pendingInvite ? 1 : 0);
+  b.textContent = String(n); b.hidden = !n;
+}
+let titleFlashT = 0;
+function flashTitle(msg) {
+  clearInterval(titleFlashT);
+  const base = document.title; let on = false, n = 0;
+  titleFlashT = setInterval(() => { on = !on; document.title = on ? msg : base; if (++n > 24 || !document.hidden && n > 6) { clearInterval(titleFlashT); document.title = base; } }, 900);
+}
+function closeInvite() { const m = $('#inv-modal'); if (m) m.remove(); NET.pendingInvite = null; updateOnlineBadge(); }
+function inviteModal(from, code) {
+  closeInvite();
+  NET.pendingInvite = { from, code };
+  const nm = nameOf(from);
+  const modal = h('div', { id: 'inv-modal', role: 'alertdialog', 'aria-modal': 'true', 'aria-label': nm + 'さんからの招待' },
+    h('div', { class: 'card stack inv' },
+      h('span', { class: 'env', 'aria-hidden': 'true' }, '💌'),
+      h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:24px' }, nm + 'さんから招待！'),
+      h('p', { style: 'font-weight:800' }, 'いっしょに絵で対戦しよう'),
+      h('button', { class: 'btn primary big', type: 'button', onclick: () => { closeInvite(); joinRoom(code).then(res => { if (!res.ok) showToast(res.msg); }); } }, '参加する'),
+      h('button', { class: 'btn', type: 'button', onclick: closeInvite }, 'あとで')));
+  document.body.append(modal);
+  updateOnlineBadge();
+  SND.sfx('go'); try { navigator.vibrate && navigator.vibrate([80, 50, 80]); } catch (e) {}
+  flashTitle('💌 ' + nm + 'さんから招待');
+  setTimeout(() => { if (NET.pendingInvite && NET.pendingInvite.code === code) closeInvite(); }, 90000);
+}
+const seenReq = new Set();
+function notifyNewRequests() {
+  const fresh = NET.reqIn.filter(r => !seenReq.has(r.id));
+  fresh.forEach(r => seenReq.add(r.id));
+  if (!fresh.length) return;
+  SND.sfx('tap'); try { navigator.vibrate && navigator.vibrate(60); } catch (e) {}
+  flashTitle('🤝 友達申請が届いています');
+  showToast(`🤝 ${nameOf(fresh[0].from)}さんから友達申請${fresh.length > 1 ? `（ほか${fresh.length - 1}件）` : ''}`, '見る', showOnline);
 }
 
 function startRoom() {
@@ -1879,7 +1930,7 @@ function startRoom() {
   r.on('invite', msg => {
     const d = msg.data;
     if (!d || d.to !== NET.me || !msg.by || !NET.friends.includes(msg.by) || !/^[A-Z]{4}$/.test(String(d.code)) || G.code) return;
-    showToast(`${nameOf(msg.by)}さんから招待が届きました`, '参加する', () => joinRoom(d.code).then(res => { if (!res.ok) showToast(res.msg); }));
+    inviteModal(msg.by, d.code);
   });
   r.presence({ app: 'drawbattle' });
 }
