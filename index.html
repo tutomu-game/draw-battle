@@ -1565,7 +1565,7 @@ const STAMPS = [
   ['daisogen', '大草原', '大草原', 'lr', 'screen', '#2DB55D'], ['hyaku', '💯', '100点', 'lr', 'screen', '#E0391F'],
   ['ryu', '🐉', '龍', 'sec', 'quake', '#FFD23F'], ['buzz', '📈', 'バズった', 'sec', 'buzz', '#FF3D8B']
 ];
-Object.entries(window.DB_EVENTS || {}).forEach(([eid, e]) => (e.stamps || []).forEach(d => STAMPS.push([d[0], d[1], d[2], d[3], d[4], d[5] || null, eid])));
+Object.entries(window.DB_EVENTS || {}).forEach(([eid, e]) => (e.stamps || []).forEach(d => STAMPS.push([d[0], d[1], d[2], d[3], d[4], d[5] || null, eid, !!d[6]])));
 const STAMP_BY = Object.fromEntries(STAMPS.map(d => [d[0], d]));
 const stampOwned = id => { const d = STAMP_BY[id]; return !d || d[3] === 'n' || gOwned(id); };
 let myReact = {};
@@ -1647,6 +1647,7 @@ function playStampFx(btn, def) {
     case 'burst': cls('fx-pop'); for (let i = 0; i < 16; i++) { const a = Math.random() * Math.PI * 2, d = 60 + Math.random() * 90; part(cx - 10, cy + 10, ['✨', txt, '🎉', '⭐'][i % 4], { dx: Math.cos(a) * d, dy: Math.sin(a) * d - 40, rot: Math.random() * 360, sc: 1.4, size: 22 + Math.random() * 12, dur: 1.1 }); } break;
     case 'rain': cls('fx-pop'); rainFx(txt, 18, col, 30); break;
     case 'screen': bigFx(txt, col, true); rainFx(txt === '💯' || txt === '🎊' ? txt : 'w', 26, col, 30); if (txt === '💯') for (let i = 0; i < 14; i++) part(innerWidth / 2, innerHeight / 2, ['🎆', '✨', '🎇'][i % 3], { dx: (Math.random() - 0.5) * innerWidth, dy: (Math.random() - 0.5) * innerHeight, rot: 90, sc: 1.6, size: 34, dur: 1.2, del: 0.3 }); break;
+    case 'gold': bigFx(txt, col, true); rainFx('🪙', 22, col, 30); rainFx('✨', 16, col, 26); for (let i = 0; i < 14; i++) part(innerWidth / 2, innerHeight / 2, ['🎆', '✨', '🎇', '🎉'][i % 4], { dx: (Math.random() - 0.5) * innerWidth, dy: (Math.random() - 0.5) * innerHeight, rot: 90, sc: 1.6, size: 34, dur: 1.2, del: 0.3 }); break;
     case 'quake': secretFx(def); break;
     case 'buzz': buzzFx(def); break;
     default: flyEmoji(btn, typeof txt === 'string' ? txt : '');
@@ -2774,7 +2775,7 @@ const GDEF = () => ({ tix: 0, shards: 0, own: [], day: '', lvg: 1, gifts: [], pu
 let dbgKind = null, gTab = 'zukan';
 function gItems() {
   return [
-    ...STAMPS.filter(d => d[3] !== 'n').map(d => ({ id: d[0], kind: 'stamp', rar: d[3], name: d[2], disp: d[1], def: d, ev: d[6] || null })),
+    ...STAMPS.filter(d => d[3] !== 'n').map(d => ({ id: d[0], kind: 'stamp', rar: d[3], name: d[2], disp: d[1], def: d, ev: d[6] || null, give: !!d[7] })),
     ...PENS.filter(p => p[3] !== 'n').map(p => ({ id: 'p_' + p[0], kind: 'pen', rar: p[3], name: p[2] + 'ペン', disp: p[1], ev: null }))
   ].filter(it => !it.ev || gOwned(it.id) || evActive(it.ev)).sort((a, b) => RAR_ORDER.indexOf(a.rar) - RAR_ORDER.indexOf(b.rar));
 }
@@ -2841,11 +2842,12 @@ function doPull() {
   let res;
   if (kind === 'miss') { nx.hx = Math.min(20, g.hx + 1); nx.shards = g.shards + 2; res = { kind }; }
   else {
-    const pool = gItems().filter(i => i.rar === kind).flatMap(i => i.ev ? [i, i, i] : [i]), it = pool[Math.floor(Math.random() * pool.length)];
+    const pool = gItems().filter(i => i.rar === kind && !i.give).flatMap(i => i.ev ? [i, i, i] : [i]), it = pool[Math.floor(Math.random() * pool.length)];
     if (g.own.includes(it.id)) { const sh = DUP_SHARDS[kind]; nx.shards = g.shards + sh; res = { kind, item: it, dup: true, shards: sh }; }
     else { nx.own = [...g.own, it.id]; res = { kind, item: it, dup: false }; }
   }
   gSave(nx);
+  { const mm = misLoad(); evCount(mm, 'pull', 1); misSave(mm); misBadge(); refreshEvBanner(); }
   return res;
 }
 function swapItem(it) {
@@ -2881,16 +2883,32 @@ function evDaysLeft(id) {
   return Math.round((Date.parse(e.end + 'T00:00:00Z') - Date.parse(todayJST() + 'T00:00:00Z')) / 86400000) + 1;
 }
 const evClaimed = id => gState().evs.includes(id);
-const evProg = (m, id) => Math.min(window.DB_EVENTS[id].need || 5, (m.ev && m.ev[id]) || 0);
+function evTasks(m, id) {
+  const c = (m.evc && m.evc[id]) || {};
+  return (window.DB_EVENTS[id].tasks || []).map(t => ({ ...t, cur: Math.min(t.goal, t.k === 'days' ? (c.days || []).length : (c[t.k] || 0)) }));
+}
+const evDoneCount = (m, id) => evTasks(m, id).filter(x => x.cur >= x.goal).length;
+const evAllDone = (m, id) => { const L = evTasks(m, id); return L.length > 0 && L.every(x => x.cur >= x.goal); };
+// 進み具合を数える(イベント開催中だけ)。kind=evn/play/days/daily/hi/online/pull/dm
+function evCount(m, kind, n) {
+  evActiveIds().forEach(id => {
+    if (!m.evc[id]) m.evc[id] = {};
+    const c = m.evc[id];
+    if (kind === 'days') { c.days = c.days || []; if (!c.days.includes(n)) c.days.push(n); }
+    else c[kind] = (c[kind] || 0) + n;
+  });
+}
 function evClaim(id) {
   if (NET.state !== 'ready' || !NET.gachaLoaded) { showToast('つながるまで少し待ってね'); return; }
   const def = window.DB_EVENTS[id], e = (NET.events || {})[id], g = gState(), m = misLoad();
-  if (!def || !evActive(id) || evClaimed(id) || evProg(m, id) < (def.need || 5)) return;
+  if (!def || !evActive(id) || evClaimed(id) || !evAllDone(m, id)) return;
   const tix = Math.max(0, e.tix || 0), sh = Math.max(0, e.shards || 0);
   if (g.tix + tix > MAX_TIX) { showToast('券が上限です。カプセルをひいてから受け取ってね'); return; }
-  gSave({ ...g, evs: [...g.evs, id], tix: g.tix + tix, shards: g.shards + sh });
-  SND.sfx('win'); showToast(`🎁 イベントミッション達成！ 券 ＋${tix}・💎 ＋${sh}`, 'ひく', showGacha);
-  misBadge(); renderMis();
+  const pz = def.prize && STAMP_BY[def.prize], own = pz && !g.own.includes(pz[0]) ? [...g.own, pz[0]] : g.own;
+  gSave({ ...g, evs: [...g.evs, id], tix: g.tix + tix, shards: g.shards + sh, own });
+  SND.sfx('win'); showToast(`🎁 全クリア！ 券 ＋${tix}・💎 ＋${sh}` + (pz ? `・${pz[2]}スタンプ` : ''), 'ひく', showGacha);
+  misBadge(); refreshEvBanner(); renderMis();
+  if (pz) setTimeout(() => previewFx(pz), 400);
 }
 function refreshEvBanner() { const el = $('#ev-slot'); if (el) { const b = eventBanner(); el.replaceChildren(...(b ? [b] : [])); } }
 function eventBanner() {
@@ -2898,10 +2916,10 @@ function eventBanner() {
   if (!ids.length) return null;
   const m = misLoad();
   return h('div', { class: 'stack' }, ids.map(id => {
-    const d = window.DB_EVENTS[id], need = d.need || 5, left = evDaysLeft(id), done = evProg(m, id) >= need;
+    const d = window.DB_EVENTS[id], total = (d.tasks || []).length, left = evDaysLeft(id), done = evAllDone(m, id);
     return h('button', { class: 'card', type: 'button', onclick: showMis, style: 'text-align:left;background:linear-gradient(135deg,#FFE066,#FF9CC7);border:3px solid var(--ink,#1B1B2F);cursor:pointer' },
       h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline;gap:8px' }, h('b', { style: 'font-size:18px' }, `${d.emoji} ${d.title}`), h('small', { style: 'font-weight:900' }, left <= 1 ? '今日まで！' : `あと${left}日`)),
-      h('small', { style: 'font-weight:800;display:block;margin-top:4px' }, evClaimed(id) ? '✅ イベントミッション受け取りずみ' : done ? '🎁 ミッション達成！ タップして受け取る' : `イベントのお題 ${evProg(m, id)}/${need}　（タップでミッションを見る）`));
+      h('small', { style: 'font-weight:800;display:block;margin-top:4px' }, evClaimed(id) ? '✅ 全クリアのごほうびを受け取りずみ' : done ? '🎁 全クリア！ タップして特別スタンプを受け取る' : `ミッション ${evDoneCount(m, id)}/${total} クリア　（タップで見る）`));
   }));
 }
 
@@ -2915,7 +2933,7 @@ function misLoad() {
   const dn = dayNoJ(), wn = weekNoJ();
   if (m.dn !== dn) { m.dn = dn; m.p = 0; m.dy = 0; m.hi = 0; }
   if (m.wn !== wn) { m.wn = wn; m.wd = []; m.wp = 0; m.wo = 0; }
-  if (!m.ev) m.ev = {};
+  if (!m.evc) m.evc = {};
   return m;
 }
 const misSave = m => { try { localStorage.setItem(MKEY, JSON.stringify(m)); } catch (e) {} };
@@ -2929,18 +2947,20 @@ const misDone = L => L.every(x => x.cur >= x.goal);
 function misClaimed(k) { const g = gState(); return k === 'd' ? g.mdd === dayNoJ() : g.mwk === weekNoJ(); }
 function misCount(rec) {
   try {
-    const m = misLoad(), before = misList(m), dn = dayNoJ();
+    const m = misLoad(), before = misList(m), dn = dayNoJ(), before_m = JSON.parse(JSON.stringify(m));
     m.p++; m.wp++;
-    if (rec.evn) evActiveIds().forEach(id => { m.ev[id] = (m.ev[id] || 0) + rec.evn; });
-    if (rec.kind === 'daily') m.dy++;
-    if (rec.kind === 'online') m.wo++;
+    evCount(m, 'play', 1); evCount(m, 'days', dn);
+    if (rec.evn) evCount(m, 'evn', rec.evn);
+    if (rec.kind === 'daily') { m.dy++; evCount(m, 'daily', 1); }
+    if (rec.kind === 'online') { m.wo++; evCount(m, 'online', 1); }
     else {
       const rounds = Math.max(1, rec.n || 1), max = rec.kind === 'guess' ? 100 : 30;
-      if ((rec.score || 0) / rounds / max >= 0.7) m.hi++;
+      if ((rec.score || 0) / rounds / max >= 0.7) { m.hi++; evCount(m, 'hi', 1); }
     }
     if (!m.wd.includes(dn)) m.wd.push(dn);
     misSave(m);
     const after = misList(m);
+    evActiveIds().forEach(id => { if (evAllDone(m, id) && !evAllDone(before_m, id) && !evClaimed(id)) showToast('🎉 イベントミッション、ぜんぶクリア！', 'うけとる', showMis); });
     ['d', 'w'].forEach(k => {
       const was = misDone(before[k]), now = misDone(after[k]);
       if (now && !was) showToast(k === 'd' ? '📋 デイリーミッション、ぜんぶ達成！' : '📋 ウィークリーミッション、ぜんぶ達成！', 'うけとる', showMis);
@@ -2951,7 +2971,7 @@ function misCount(rec) {
 }
 function misBadge() {
   const m = misLoad(), L = misList(m);
-  const n = ['d', 'w'].filter(k => misDone(L[k]) && !misClaimed(k)).length + evActiveIds().filter(id => !evClaimed(id) && evProg(m, id) >= (window.DB_EVENTS[id].need || 5)).length;
+  const n = ['d', 'w'].filter(k => misDone(L[k]) && !misClaimed(k)).length + evActiveIds().filter(id => !evClaimed(id) && evAllDone(m, id)).length;
   document.querySelectorAll('#mis-badge').forEach(b => { b.textContent = String(n); b.hidden = !n; });
 }
 function misClaim(k) {
@@ -2960,6 +2980,7 @@ function misClaim(k) {
   if (!misDone(L) || misClaimed(k)) return;
   if (g.tix + rw.tix > MAX_TIX) { showToast('券が上限です。カプセルをひいてから受け取ってね'); return; }
   gSave({ ...g, tix: g.tix + rw.tix, shards: g.shards + rw.sh, ...(k === 'd' ? { mdd: dayNoJ() } : { mwk: weekNoJ() }) });
+  if (k === 'd') { const mm = misLoad(); evCount(mm, 'dm', 1); misSave(mm); refreshEvBanner(); }
   SND.sfx('win');
   showToast(`🎁 ガチャ券 ＋${rw.tix}・💎 ＋${rw.sh} をもらいました`, 'ひく', showGacha);
   misBadge(); renderMis();
@@ -2985,16 +3006,21 @@ function renderMis() {
     h('div', { class: 'row2', style: 'align-items:center' }, h('button', { class: 'btn small', type: 'button', onclick: () => { renderTitle(); go('title'); } }, '← もどる'),
       h('h2', { style: 'margin:0 auto;font-size:22px' }, '📋 ミッション')),
     ...evActiveIds().map(id => {
-      const d = window.DB_EVENTS[id], e = NET.events[id], need = d.need || 5, cur = evProg(m, id), got = evClaimed(id), full = g.tix + (e.tix || 0) > MAX_TIX, ok = cur >= need;
+      const d = window.DB_EVENTS[id], e = NET.events[id], L = evTasks(m, id), got = evClaimed(id), full = g.tix + (e.tix || 0) > MAX_TIX, ok = evAllDone(m, id);
+      const pz = d.prize && STAMP_BY[d.prize];
       return h('div', { class: 'card stack', style: 'background:#FFF0F7' },
         h('div', { style: 'display:flex;justify-content:space-between;align-items:baseline' }, h('b', { style: 'font-size:18px' }, `${d.emoji} ${d.title}`), h('small', { style: 'font-weight:800;opacity:.8' }, `あと${evDaysLeft(id)}日`)),
         h('small', { style: 'font-weight:800' }, d.desc || ''),
-        h('div', { style: 'display:flex;justify-content:space-between;font-weight:800' }, h('span', {}, (ok ? '✅ ' : '⬜ ') + `イベントのお題を${need}回えがく`), h('span', {}, cur + '/' + need)),
-        h('div', { style: 'height:8px;border-radius:5px;background:rgba(27,27,47,.15);overflow:hidden', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(need), 'aria-valuenow': String(cur), 'aria-label': 'イベントのお題' },
-          h('div', { style: `height:100%;width:${Math.round(cur / need * 100)}%;background:${ok ? '#38C172' : '#FF3D8B'}` })),
-        h('small', { style: 'font-weight:800;text-align:center' }, `達成で 🎟 券×${e.tix || 0} ・ 💎 カケラ×${e.shards || 0}`),
+        ...L.map(x => {
+          const dn = x.cur >= x.goal;
+          return h('div', { style: 'display:flex;flex-direction:column;gap:4px' },
+            h('div', { style: 'display:flex;justify-content:space-between;font-weight:800' }, h('span', {}, (dn ? '✅ ' : '⬜ ') + x.t), h('span', {}, x.cur + '/' + x.goal)),
+            h('div', { style: 'height:7px;border-radius:5px;background:rgba(27,27,47,.15);overflow:hidden', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(x.goal), 'aria-valuenow': String(x.cur), 'aria-label': x.t },
+              h('div', { style: `height:100%;width:${Math.round(x.cur / x.goal * 100)}%;background:${dn ? '#38C172' : '#FF3D8B'}` })));
+        }),
+        h('small', { style: 'font-weight:800;text-align:center' }, `ぜんぶクリアで ${pz ? pz[1] + ' ' + pz[2] + 'スタンプ ・ ' : ''}🎟 券×${e.tix || 0} ・ 💎 カケラ×${e.shards || 0}`),
         h('button', { class: 'btn primary', type: 'button', disabled: !ok || got || full, onclick: () => evClaim(id) },
-          got ? '✅ 受け取りずみ' : !ok ? 'ミッション中' : full ? '券が上限です（先にひいてね）' : '🎁 受け取る'));
+          got ? '✅ 受け取りずみ' : !ok ? `ミッション中（${evDoneCount(m, id)}/${L.length}）` : full ? '券が上限です（先にひいてね）' : '🎁 受け取る'));
     }),
     card('d', 'デイリー', '毎日 0:00 にリセット'),
     card('w', 'ウィークリー', '毎週 月曜 0:00 にリセット'),
@@ -3021,7 +3047,7 @@ function renderGacha(tab) {
     const o = own(it), hidden = !o && it.rar === 'sec';
     return h('button', { class: 'gc-it r-' + it.rar + (o ? '' : ' lock'), type: 'button', 'aria-label': (o ? it.name : '未入手') + '（' + RAR_STAR[it.rar] + '）',
       onclick: () => { if (o && it.kind === 'stamp') previewFx(it.def); } },
-      h('span', { class: 'ic' }, hidden ? '？' : itemIcon(it) ), h('small', {}, o ? it.name : hidden ? '？？？' : it.ev ? '限定' : '？'));
+      h('span', { class: 'ic' }, hidden ? '？' : itemIcon(it) ), h('small', {}, o ? it.name : hidden ? '？？？' : it.give ? '特典' : it.ev ? '限定' : '？'));
   }));
   const unown = items.filter(it => !own(it) && !it.ev);
   const secLeft = unown.filter(it => it.rar === 'sec');
