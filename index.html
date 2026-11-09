@@ -2819,13 +2819,19 @@ function renderGacha(tab) {
       onclick: () => { if (o && it.kind === 'stamp') previewFx(it.def); } },
       h('span', { class: 'ic' }, hidden ? '？' : itemIcon(it)), h('small', {}, o ? it.name : hidden ? '？？？' : '？'));
   }));
+  const unown = items.filter(it => !own(it));
+  const secLeft = unown.filter(it => it.rar === 'sec');
+  const swapRow = (icon, title, sub, cost, onSwap) => h('div', { class: 'gc-row' }, h('span', { style: 'font-size:26px;width:44px;text-align:center' }, icon),
+    h('div', { style: 'flex:1' }, h('b', {}, title), h('br'), h('small', { style: 'font-weight:800;opacity:.8' }, sub)),
+    h('button', { class: 'btn small', type: 'button', disabled: g.shards < cost, onclick: onSwap }, '💎' + cost));
   const swap = h('div', { class: 'stack' }, h('small', { style: 'font-weight:800' }, 'ダブりやハズレで貯まったカケラで、好きなものと交換できます。'),
-    items.filter(it => !own(it)).length ? items.filter(it => !own(it)).map(it => {
-      const cost = SWAP_COST[it.rar];
-      return h('div', { class: 'gc-row' }, h('span', { style: 'font-size:26px;width:44px;text-align:center' }, itemIcon(it)),
-        h('div', { style: 'flex:1' }, h('b', {}, it.name), h('br'), h('small', { style: 'font-weight:800;opacity:.8' }, RAR_STAR[it.rar])),
-        h('button', { class: 'btn small', type: 'button', disabled: g.shards < cost, onclick: () => { if (swapItem(it)) { showToast(it.name + 'を手に入れました！'); renderGacha(); } } }, '💎' + cost));
-    }) : h('p', { style: 'font-weight:800' }, '🎉 すべて手に入れました！'));
+    unown.length ? [
+      ...unown.filter(it => it.rar !== 'sec').map(it => swapRow(itemIcon(it), it.name, RAR_STAR[it.rar], SWAP_COST[it.rar], () => { if (swapItem(it)) { showToast(it.name + 'を手に入れました！'); renderGacha(); } })),
+      secLeft.length ? swapRow('？', '？？？', 'シークレット（どれか1つ・おまかせ）', SWAP_COST.sec, () => {
+        const it = secLeft[Math.floor(Math.random() * secLeft.length)];
+        if (swapItem(it)) { showToast('シークレットを手に入れました！'); renderGacha(); setTimeout(() => previewFx(it.def), 300); }
+      }) : null
+    ] : h('p', { style: 'font-weight:800' }, '🎉 すべて手に入れました！'));
   const tabs = h('div', { class: 'seg', role: 'group', 'aria-label': '表示' },
     h('button', { type: 'button', 'aria-pressed': String(gTab === 'zukan'), onclick: () => renderGacha('zukan') }, `図鑑 ${items.filter(own).length}/${items.length}`),
     h('button', { type: 'button', 'aria-pressed': String(gTab === 'swap'), onclick: () => renderGacha('swap') }, 'カケラ交換'));
