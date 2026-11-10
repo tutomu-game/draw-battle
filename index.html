@@ -804,12 +804,25 @@ function updateTabbar() { const a = $('#app'); if (a) a.dataset.net = NET.state 
 function hudKids() {
   const st = heartState(), g = gState();
   return [
-    h('button', { class: 'hchip', type: 'button', 'aria-label': `審査ハート ${st.eff}個`, onclick: () => showToast(st.eff < HEART_MAX ? `ハートは30分ごとに1つ回復します（あと${fmtMs(st.nextMs)}）` : '審査ハートは、AIの採点1ゲームにつき1つ使います') },
+    h('button', { class: 'hchip', type: 'button', 'aria-label': `審査ハート ${st.eff}個`, onclick: () => { const x = heartState(); showToast(x.eff < HEART_MAX ? `ハートは30分ごとに1つ回復します（あと${fmtMs(x.nextMs)}）` : '審査ハートは、AIの採点1ゲームにつき1つ使います'); } },
       h('span', { class: 'hr', 'aria-hidden': 'true' }, '♥'), h('b', {}, String(st.eff)), g.hx ? h('small', { class: 'hr', style: 'font-weight:900' }, '＋' + g.hx) : null),
     NET.state === 'ready' ? h('button', { class: 'hchip', type: 'button', 'aria-label': `ガチャ券 ${g.tix}枚`, onclick: showGacha }, h('span', { 'aria-hidden': 'true' }, '🎟'), h('b', {}, String(g.tix))) : null
   ];
 }
-function refreshHud() { const el = $('#hud'); if (el) el.replaceChildren(...hudKids().filter(Boolean)); }
+// スクロール中・指が触れている間は、画面の部品を差し替えない(iPhoneでスクロールが止まるのを防ぐ)。中身が同じなら、そのまま
+let uiTouch = 0, uiScrollT = 0;
+addEventListener('touchstart', () => { uiTouch = 1; }, { passive: true, capture: true });
+['touchend', 'touchcancel'].forEach(ev => addEventListener(ev, () => { uiTouch = 0; uiScrollT = Date.now(); }, { passive: true, capture: true }));
+addEventListener('scroll', () => { uiScrollT = Date.now(); }, { passive: true, capture: true });
+const uiBusy = () => uiTouch > 0 || Date.now() - uiScrollT < 600;
+function swapKids(el, kids) {
+  const tmp = document.createElement('div'); tmp.append(...kids);
+  clearTimeout(el._sw);
+  if (tmp.innerHTML === el.innerHTML) return;
+  if (uiBusy()) { el._sw = setTimeout(() => swapKids(el, kids), 700); return; }
+  el.replaceChildren(...kids);
+}
+function refreshHud() { const el = $('#hud'); if (el) swapKids(el, hudKids().filter(Boolean)); }
 function renderHome() {
   const dyn = $('#title-dyn');
   updateTabbar(); updateOnlineBadge();
@@ -2957,7 +2970,7 @@ function rankCard() {
   return h('div', { id: 'rank-card', class: 'card', style: 'display:flex;flex-direction:column;gap:6px;padding:9px 14px' }, ...rankCardKids());
 }
 setInterval(() => { if ($('#rank-card') && $('#scr-title').classList.contains('active')) refreshRankCard(); }, 15000);
-function refreshRankCard() { const c = $('#rank-card'); if (c && PROFILE) c.replaceChildren(...rankCardKids()); if (PROFILE) updateChip(); refreshHud(); }
+function refreshRankCard() { const c = $('#rank-card'); if (c && PROFILE) swapKids(c, rankCardKids().filter(Boolean)); if (PROFILE) updateChip(); refreshHud(); }
 
 /* ---------- ガチャ(ごほうびカプセル) ---------- */
 const G_RATE = [['miss', 40], ['r', 30], ['sr', 17], ['hr', 8], ['lr', 4], ['sec', 1]];
@@ -3107,7 +3120,7 @@ function evClaim(id) {
   misBadge(); refreshEvBanner(); renderMis();
   if (pz) setTimeout(() => previewFx(pz), 400);
 }
-function refreshEvBanner() { const el = $('#ev-slot'); if (el) { const b = eventBanner(); el.replaceChildren(...(b ? [b] : [])); } }
+function refreshEvBanner() { const el = $('#ev-slot'); if (el) { const b = eventBanner(); swapKids(el, b ? [b] : []); } }
 function eventBanner() {
   const ids = evActiveIds();
   if (!ids.length) return null;
