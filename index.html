@@ -303,6 +303,16 @@ body.fx-shake{animation:fxShake .45s linear 3}
 .thumb{flex:none;width:118px;aspect-ratio:4/5;padding:0;border:3px solid var(--ink);border-radius:10px;background:#fff;overflow:hidden;cursor:zoom-in}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .rinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.alb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.alb-it{position:relative;background:var(--paper);border:3px solid var(--ink);border-radius:10px;padding:0;overflow:hidden;text-align:center;font:inherit;color:var(--ink);cursor:pointer}
+.alb-it img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block;background:#fff}
+.alb-it .q{aspect-ratio:4/5;display:grid;place-items:center;font-family:var(--f-display);font-size:34px;color:rgba(27,27,47,.35);background:repeating-linear-gradient(45deg,#f1f1f1,#f1f1f1 8px,#e4e4e4 8px,#e4e4e4 16px)}
+.alb-it span{display:block;font-size:11px;font-weight:800;padding:2px 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.alb-it .sc{position:absolute;top:4px;right:4px;background:var(--ink);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;font-weight:900}
+.alb-it.no{cursor:default;opacity:.85}
+.alb-chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.alb-chips button{flex:none;font:inherit;font-weight:800;font-size:12px;color:var(--ink);background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:3px 10px}
+.alb-chips button[aria-pressed="true"]{background:var(--ink);color:#fff}
 .blk img{visibility:hidden}
 .blk{background:repeating-linear-gradient(45deg,#eee,#eee 6px,#d9d9d9 6px,#d9d9d9 12px)!important;cursor:default!important}
 .rname{display:flex;align-items:center;gap:6px;font-family:var(--f-display);font-size:15px;min-width:0}
@@ -417,6 +427,7 @@ body.fx-shake{animation:fxShake .45s linear 3}
   <section id="scr-gacha" class="screen" aria-label="ごほうびカプセル"></section>
   <section id="scr-setup" class="screen" aria-label="あそびかた・せってい"></section>
   <section id="scr-mis" class="screen" aria-label="ミッション"></section>
+  <section id="scr-album" class="screen" aria-label="さくひん帳"></section>
   <section id="scr-reg" class="screen" aria-label="プロフィール"></section>
   <section id="scr-online" class="screen" aria-label="オンライン"></section>
   <section id="scr-lobby" class="screen" aria-label="ルーム"></section>
@@ -434,6 +445,7 @@ body.fx-shake{animation:fxShake .45s linear 3}
 
 <script src="config.js"></script>
 <script src="events.js"></script>
+<script src="topics.js"></script>
 <script src="fb-shim.js"></script>
 <script>
 (() => {
@@ -466,44 +478,9 @@ const JUDGES = [
     style: 'ロボット口調（「ピピッ」「解析完了」など）で冷静。毒舌だが愛がある。採点はやや辛口。' }
 ];
 
-const TOPICS = [
-  '寝ているネコ', 'ジャンプするカエル', 'ペンギンの親子', 'あくびをするライオン', '空を飛ぶブタ',
-  'ダンスするタコ', 'サングラスをかけたパンダ', '雨宿りするカタツムリ', '恥ずかしがるキリン', 'スキーをするクマ',
-  '巨大なおにぎり', '走るトースト', 'とろけるソフトクリーム', 'ラーメンを食べる宇宙人', '笑っている目玉焼き',
-  'サメが握る寿司', '山盛りのたこ焼き', 'かき氷の富士山', 'おしゃれなカレーライス', '踊るバナナ',
-  '空飛ぶバス', '海の中の電車', '魔法使いの学校', '雲の上のラーメン屋', 'ひみつ基地',
-  '夜の動物園', '宇宙のコンビニ', 'ロボットの遊園地', '温泉に入る雪だるま', '桜の下の運動会',
-  '忍者の宅配便', '勇者の引っ越し', '寝坊した魔王', 'サンタの夏休み', '料理するロボット',
-  '傘をさす幽霊', 'ギターを弾くおじいさん', '泣いている鬼', '自転車に乗る宇宙飛行士', '釣りをする河童',
-  '月曜日の朝', 'しあわせな気分', 'やる気が出ない日', 'ドキドキの瞬間', '夢の中の世界',
-  '未来の学校', '10年後の自分', 'かくれんぼ', '大そうじ', '大雨の遠足',
-  '誕生日パーティー', '落とし穴にはまった人', '空を泳ぐ魚', 'お化け屋敷の受付', '巨大ロボと戦う小学生',
-  '朝ごはんを作る猫', '火山でキャンプ', '眠れない夜', '海賊のお宝さがし', 'おばけの運動会',
-
-  // どうぶつ
-  'かさを持つサル', 'マラソンをするカメ', '歌うカエルの合唱団', 'お昼寝するコアラ', '泳ぐゾウ', '怒ったニワトリ', 'おしゃれなキツネ', '泣いているシロクマ', '空を飛ぶカバ', 'ピアノを弾くネズミ',
-  '電車に乗るイヌ', '眠そうなフクロウ', '逆立ちするアヒル', '虫取りあみを持つカンガルー', '手をふるタヌキ', '走るダチョウ', 'お風呂に入るカピバラ', 'はしごを登るヘビ', 'しっぽが長すぎるサル', '本を読むウサギ',
-  // たべもの
-  '巨大なハンバーガー', 'ゆれるプリン', '山のようなフライドポテト', 'おでんの鍋', 'ケーキを運ぶ人', 'こげたパン', '回転ずしのレーン', '夏のスイカ割り', '熱々のピザ', 'おにぎりの遠足',
-  '大きな目玉のたまご', 'パフェの塔', 'カレー味のアイス', 'おもちを食べるおじいさん', 'クリスマスのチキン', '寿司を作るロボット', '溶けるチョコレート', 'ラーメンの湯気', 'ホットドッグの犬', '果物のバスケット',
-  // のりもの・場所
-  '空を走る新幹線', '宇宙を飛ぶバイク', '海を渡る自転車', '雲の上の遊園地', '山の上の駅', '森の中のバス停', '空飛ぶじゅうたん', '深海のホテル', '月の上のキャンプ場', '砂漠のオアシス',
-  '商店街のお祭り', '雪の中の温泉', '夕焼けの海岸', 'ジャングルの図書館', '地下のひみつ都市', '浮かぶ島', '星空のプラネタリウム', 'おばけ屋敷の遊園地', '巨大な滑り台', 'ツリーハウス',
-  // ファンタジー
-  'ドラゴンのお医者さん', '魔女のラーメン屋', '妖精の運動会', '勇者とスライムの友情', '宝箱をあける冒険者', '空飛ぶほうき', '魔法の杖をなくした魔法使い', '雲の上の王様', '眠る巨人', '人魚のコンサート',
-  '幽霊の引っ越し', '宇宙人の学校', 'ロボットの結婚式', 'タイムマシンの故障', '妖怪の夏祭り', '鬼ごっこをする鬼', '雪の女王のかき氷屋', '忍者の修行', '姫を助ける犬', '恐竜と散歩',
-  // にちじょう・シーン
-  '朝の満員電車', '寝ぐせのひどい朝', 'テストの前の日', '忘れ物に気づいた瞬間', '雨の日の通学路', 'お母さんの怒った顔', 'こたつでみかん', '夏休みの宿題', '運動会のリレー', '文化祭の準備',
-  '初めてのひとり旅', '散歩中のハプニング', '大掃除でみつけた宝物', '引っ越しの日', 'お風呂でうたう人', '星に願いをかける夜', '花火大会の帰り道', '遅刻しそうな朝', 'カラオケの盛り上がり', '雪合戦',
-  // スポーツ・あそび
-  '空中でダンクをきめる人', 'ゴールを決めた瞬間', 'ボウリングのストライク', '全力で走る運動会', '釣りで大物を釣った人', 'スケボーに乗る犬', '山登りの頂上', '縄跳びをする宇宙人', 'ブランコで空まで届く', 'かくれんぼの名人',
-  // きもち・ことば
-  'うれしい気持ち', 'ねむい午後', '緊張する発表会', 'わくわくする遠足前夜', 'ひらめいた瞬間', 'さみしい夕方', 'おこっている雷', 'ごきげんな朝', 'おなかがすいた', 'ありがとうの気持ち',
-  // ものの擬人化・へんなもの
-  'いばっているカサ', '泣いている消しゴム', '走るエレベーター', '歌う冷蔵庫', 'おしゃべりな信号機', '踊る洗濯機', '眠そうな時計', 'ぐるぐる回る扇風機', 'ヒーローになったスプーン', '空を飛ぶ靴',
-  // きせつ
-  '春のお花見', '夏の海水浴', '秋の紅葉狩り', '冬の雪だるま作り', 'ハロウィンの夜', 'お正月の初詣', '七夕のねがいごと', '節分の豆まき', 'クリスマスツリー', '梅雨のあじさい'
-];
+const TOPIC_CATS = (window.DB_TOPICS || []).map(([name, list]) => [name, list]);
+const TOPICS = TOPIC_CATS.flatMap(c => c[1]);
+const TOPIC_CAT = Object.fromEntries(TOPIC_CATS.flatMap(([n, l]) => l.map(t => [t, n])));
 
 const RULES = [
   { id: 'one',   name: '一筆書き',     desc: 'ペンを離したら完成。離せるのは1回だけ！', bonus: 6 },
@@ -839,7 +816,9 @@ function renderHome() {
   setTimeout(gUpdateBadge, 0); setTimeout(misBadge, 0);
   const modeBtn = (id, t, desc, col, ic) => h('button', { class: 'card mbig', type: 'button', style: `background:${col}`, onclick: () => { SND.sfx('tap'); S.mode = id; showSetup(); } },
     h('span', { class: 'mic', 'aria-hidden': 'true' }, ic), h('span', {}, h('b', {}, t), h('small', {}, desc)));
-  const histBtn = h('button', { class: 'btn small', type: 'button', style: 'align-self:center', onclick: showHistory }, '📜 せんれき');
+  const histBtn = h('div', { class: 'row2', style: 'justify-content:center;gap:8px' },
+    h('button', { class: 'btn small', type: 'button', onclick: () => showAlbum() }, '🖼 さくひん帳'),
+    h('button', { class: 'btn small', type: 'button', onclick: showHistory }, '📜 せんれき'));
   const legal = h('p', { style: 'text-align:center;font-size:12px;font-weight:800;opacity:.8' },
     h('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, '利用規約'), ' ・ ', h('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, 'プライバシーポリシー'));
   fill(dyn, h('div', { id: 'hud', class: 'hud' }, ...hudKids().filter(Boolean)), rankCard(), h('div', { id: 'ev-slot' }, eventBanner()), dailyBtn(),
@@ -911,11 +890,12 @@ function startGame() {
   S.players = Array.from({ length: n }, (_, i) => ((solo ? S.soloName : S.names[i]) || (i === 0 ? mine : '') || '').trim().slice(0, 8) || (solo ? 'あなた' : 'プレイヤー' + (i + 1)));
   S.total = solo ? S.soloRounds : S.rounds;
   S.totals = Array(n).fill(0);
-  S.history = []; S.used = new Set(); S.round = 0; S.lastJudge = null; S.lastRule = null; S.gameSeq = (S.gameSeq || 0) + 1;
+  S.history = []; S.used = new Set(); S.round = 0; S.lastJudge = null; S.lastRule = null; S.gameSeq = (S.gameSeq || 0) + 1; S.challenge = false;
   newRound();
 }
 
 function pickTopic() {
+  if (S.forceTopic) { const t = S.forceTopic; S.forceTopic = null; S.used.add(t); return t; }
   const evT = evThemes().filter(t => !S.used.has(t));
   if (evT.length && Math.random() < 0.5) { const t = evT[rand(evT.length)]; S.used.add(t); return t; }
   const pool = TOPICS.filter(t => !S.used.has(t));
@@ -945,6 +925,7 @@ function newRound() {
     if (r.id === 'tri') cur.rule.colors = shuffle(COLORS.map(c => c[0])).slice(0, 3);
   }
   if (S.mode === 'guess') cur.choices = makeChoices(cur.topic);
+  if (S.challenge) cur.rerolled = true;
   S.cur = cur;
   showIntro();
 }
@@ -1787,6 +1768,7 @@ function stampBar(pi) {
 const ouid = pi => (S.online && G.game && G.game.order ? G.game.order[pi] || null : null);
 function showResult() {
   const hist = S.history[S.history.length - 1];
+  albumCollect(hist);
   const solo = S.players.length === 1;
   const rk = ranks(hist.results.map(r => r.total));
   const order = hist.results.map((_, i) => i).sort((a, b) => hist.results[b].total - hist.results[a].total || a - b);
@@ -1897,9 +1879,13 @@ function showFinalSolo() {
           isNew ? h('span', { class: 'ribbon' }, 'NEW RECORD!') : null))),
     h('div', { class: 'card' }, h('h2', { style: 'font-size:18px;margin-bottom:4px' }, 'ラウンドごとの結果'), rows),
     played.length ? h('div', { class: 'card stack' }, h('h2', { style: 'font-size:18px' }, 'みんなの作品'), gallery) : null,
-    h('div', { class: 'stack', style: 'padding-bottom:8px' },
-      h('button', { class: 'btn primary big', type: 'button', onclick: startGame }, 'もう一度あそぶ'),
-      h('button', { class: 'btn', type: 'button', onclick: showSetup }, 'モードや設定を変える'))
+    S.challenge
+      ? h('div', { class: 'stack', style: 'padding-bottom:8px' },
+          h('button', { class: 'btn primary big', type: 'button', onclick: () => showAlbum() }, '🖼 さくひん帳を見る'),
+          h('button', { class: 'btn', type: 'button', onclick: () => { S.challenge = false; renderTitle(); go('title'); } }, 'ホームにもどる'))
+      : h('div', { class: 'stack', style: 'padding-bottom:8px' },
+          h('button', { class: 'btn primary big', type: 'button', onclick: startGame }, 'もう一度あそぶ'),
+          h('button', { class: 'btn', type: 'button', onclick: showSetup }, 'モードや設定を変える'))
   );
   go('final');
   SND.bgm('menu');
@@ -2651,7 +2637,7 @@ function recordHistory(rec) {
     if (fresh) { setTimeout(() => awardXp(rec), 0); setTimeout(() => misCount(rec), 0); }
   } catch (e) {}
 }
-const KIND_NAME = { attack: '縛りチャレンジ', guess: 'AIに当てさせろ', online: 'オンライン対戦', daily: '今日の1題' };
+const KIND_NAME = { battle: 'ひとりで1題', attack: '縛りチャレンジ', guess: 'AIに当てさせろ', online: 'オンライン対戦', daily: '今日の1題' };
 function dailyStreak(list) {
   const days = new Set(list.filter(x => x.kind === 'daily').map(x => x.date));
   const d = new Date(Date.now() + 9 * 3600e3);
@@ -2683,6 +2669,117 @@ function showHistory() {
       : h('p', { class: 'wait' }, 'まだ記録がありません。1人プレイやオンライン対戦、今日の1題で遊ぶと、ここに残ります。'),
     h('div', { class: 'foot' }, h('button', { class: 'btn primary big', type: 'button', onclick: () => { renderTitle(); go('title'); } }, 'タイトルにもどる')));
   go('result'); SND.bgm('menu');
+}
+
+/* ---------- さくひん帳(描いた絵のアルバム・お題ごとのベスト) ---------- */
+const ALB = {
+  p: null, urls: [],
+  open() {
+    if (!this.p) this.p = new Promise((res, rej) => {
+      try {
+        const q = indexedDB.open('dbAlbum', 1);
+        q.onupgradeneeded = () => q.result.createObjectStore('w', { keyPath: 'topic' });
+        q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+      } catch (e) { rej(e); }
+    });
+    return this.p;
+  },
+  async tx(mode, fn) {
+    const db = await this.open();
+    return new Promise((res, rej) => { const t = db.transaction('w', mode), r = fn(t.objectStore('w')); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); });
+  },
+  all() { return this.tx('readonly', st => st.getAll()).then(a => a || []); },
+  get(t) { return this.tx('readonly', st => st.get(t)); },
+  put(rec) { return this.tx('readwrite', st => st.put(rec)); },
+  del(t) { return this.tx('readwrite', st => st.delete(t)); }
+};
+async function albumThumb(url) {
+  const img = new Image(); img.src = url; await img.decode();
+  const c = document.createElement('canvas'); c.width = 480; c.height = 600;
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 480, 600); x.drawImage(img, 0, 0, 480, 600);
+  return new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+}
+// 結果画面で、自分の絵をお題ごとのベストとして保存する(同じお題は高い点のものだけ残す)
+async function albumCollect(hist) {
+  try {
+    if (!hist || !hist.results) return;
+    let pi = -1;
+    if (S.players.length === 1) pi = 0;
+    else if (S.online && G.game) pi = (G.game.order || []).indexOf(NET.me);
+    const r = hist.results[pi];
+    if (!r || r.blank || !r.url) return;
+    const max = S.mode === 'guess' ? 100 : 30, norm = Math.max(0, Math.min(1, (r.total || 0) / max));
+    const old = await ALB.get(hist.topic);
+    const rec = { topic: hist.topic, plays: ((old && old.plays) || 0) + 1, first: (old && old.first) || Date.now() };
+    if (old && old.norm >= norm) { await ALB.put({ ...old, plays: rec.plays }); return; }
+    const img = await albumThumb(r.url);
+    await ALB.put({ ...rec, norm, score: r.total, max, mode: S.online ? 'online' : S.mode, judge: hist.judge ? hist.judge.id : '', cmt: String(r.comment || '').slice(0, 80), ts: Date.now(), img });
+  } catch (e) {}
+}
+function challengeTopic(t) {
+  if (S.ai.state !== 'ready') { showToast('AI審査員の準備ができてから、もう一度ためしてね'); return; }
+  S.mode = 'battle'; S.challenge = true;
+  S.players = [((PROFILE && PROFILE.name) || 'あなた').slice(0, 8)]; S.total = 1; S.totals = [0];
+  S.history = []; S.used = new Set(); S.round = 0; S.lastJudge = null; S.lastRule = null; S.gameSeq = (S.gameSeq || 0) + 1; S.forceTopic = t;
+  newRound();
+}
+let albCat = 'all';
+async function showAlbum(cat) {
+  if (cat) albCat = cat;
+  const el = $('#scr-album');
+  ALB.urls.forEach(u => URL.revokeObjectURL(u)); ALB.urls = [];
+  let recs = [];
+  try { recs = await ALB.all(); } catch (e) {
+    fill(el, h('div', { class: 'row-between' }, h('button', { class: 'btn small', type: 'button', onclick: () => { renderTitle(); go('title'); } }, '← もどる'), h('h2', { style: 'font-size:22px' }, 'さくひん帳'), h('span', { style: 'width:74px' })),
+      h('div', { class: 'card' }, h('p', { style: 'font-weight:800' }, 'この環境では、さくひん帳を使えません（プライベートモードなど）。')));
+    go('album'); return;
+  }
+  const by = new Map(recs.map(r => [r.topic, r]));
+  const extra = recs.filter(r => !TOPIC_CAT[r.topic]);
+  const cats = [...TOPIC_CATS.map(([n, l]) => [n, l]), ...(extra.length ? [['じぶんのお題・イベント', extra.map(r => r.topic)]] : [])];
+  const total = TOPICS.length, got = TOPICS.filter(t => by.has(t)).length;
+  const shown = cats.filter(([n]) => albCat === 'all' || albCat === n);
+  const img = r => { const u = URL.createObjectURL(r.img); ALB.urls.push(u); return u; };
+  const card = (t, c) => {
+    const r = by.get(t);
+    if (!r) return h('button', { class: 'alb-it no', type: 'button', 'aria-label': 'まだ描いていないお題', onclick: () => showToast('まだ描いていないお題です。あそぶと出会えるかも！') }, h('div', { class: 'q', 'aria-hidden': 'true' }, '？'), h('span', {}, '？？？'));
+    return h('button', { class: 'alb-it', type: 'button', 'aria-label': t + ' ' + r.score + '点', onclick: () => albumDetail(r) },
+      h('img', { src: img(r), alt: t + 'の絵' }), h('b', { class: 'sc' }, r.score + '点'), h('span', {}, t));
+  };
+  const chip = (id, label) => h('button', { type: 'button', 'aria-pressed': String(albCat === id), onclick: () => showAlbum(id) }, label);
+  fill(el,
+    h('div', { class: 'row-between' }, h('button', { class: 'btn small', type: 'button', onclick: () => { renderTitle(); go('title'); } }, '← もどる'), h('h2', { style: 'font-size:22px' }, '🖼 さくひん帳'), h('span', { style: 'width:74px' })),
+    h('div', { class: 'card stack' },
+      h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:17px' }, `描いたお題 ${got} / ${total}`),
+      h('div', { class: 'bar', style: 'height:12px;border:3px solid var(--ink);border-radius:999px;overflow:hidden;background:#fff' }, h('i', { style: `display:block;height:100%;width:${Math.round(got / total * 100)}%;background:var(--green)` })),
+      h('p', { class: 'gline' }, '遊んだお題のベストの絵が、ここに残ります。高い点で描き直すと、入れ替わります。（この端末にだけ保存されます）')),
+    h('div', { class: 'alb-chips', role: 'group', 'aria-label': 'カテゴリ' }, chip('all', 'すべて'), cats.map(([n, l]) => chip(n, `${n} ${l.filter(t => by.has(t)).length}/${l.length}`))),
+    shown.map(([n, l]) => h('div', { class: 'stack' }, albCat === 'all' ? h('h3', { class: 'sec' }, `${n}（${l.filter(t => by.has(t)).length}/${l.length}）`) : null,
+      h('div', { class: 'alb-grid' }, l.map(t => card(t, n))))));
+  go('album');
+}
+function albumDetail(r) {
+  const ov = h('div', { role: 'dialog', 'aria-modal': 'true', 'aria-label': r.topic, style: 'position:fixed;inset:0;z-index:60;background:rgba(27,27,47,.7);display:flex;padding:14px;overflow:auto' });
+  const close = () => { ov.remove(); URL.revokeObjectURL(u); };
+  const u = URL.createObjectURL(r.img);
+  const judge = JUDGES.find(j => j.id === r.judge);
+  const d = new Date(r.ts + 9 * 3600e3);
+  const dl = h('a', { class: 'btn small', style: 'text-decoration:none', href: u, download: 'らくがきAI_' + r.topic + '.jpg' }, '📥 画像を保存');
+  let armed = false;
+  const del = h('button', { class: 'btn small', type: 'button', onclick: async () => {
+    if (!armed) { armed = true; del.textContent = 'ほんとうに消す？'; return; }
+    try { await ALB.del(r.topic); } catch (e) {}
+    close(); showAlbum();
+  } }, '🗑 消す');
+  ov.append(h('div', { class: 'card stack', style: 'max-width:360px;width:100%;background:#fff;margin:auto' },
+    h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:20px;text-align:center' }, r.topic),
+    h('img', { src: u, alt: r.topic + 'の絵', style: 'width:72%;align-self:center;aspect-ratio:4/5;object-fit:cover;border:3px solid var(--ink);border-radius:10px;background:#fff' }),
+    h('p', { style: 'text-align:center;font-weight:900' }, `ベスト ${r.score}点`, h('small', { style: 'font-weight:800;opacity:.75' }, `　${d.getUTCMonth() + 1}/${d.getUTCDate()}${judge ? '　審査員: ' + judge.name : ''}　挑戦${r.plays || 1}回`)),
+    r.cmt ? h('p', { class: 'bubble' }, r.cmt) : null,
+    h('button', { class: 'btn primary', type: 'button', onclick: () => { close(); challengeTopic(r.topic); } }, 'このお題でベスト更新に挑戦！'),
+    h('div', { class: 'row2', style: 'gap:8px;justify-content:center' }, dl, del),
+    h('button', { class: 'btn', type: 'button', onclick: close }, 'とじる')));
+  document.body.append(ov);
 }
 
 /* ---------- 今日の1題 ---------- */
@@ -3289,7 +3386,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
 
-if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { myXp: () => myXp(), lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
+if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { ALB, albumCollect, showAlbum, challengeTopic, myXp: () => myXp(), lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
 
 function boot(saved) {
   if (saved && typeof saved === 'object') {
