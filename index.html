@@ -50,6 +50,7 @@ h1,h2,h3,p{margin:0}
 h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 /* ページ全体は動かさない(iPhoneのホーム画面アプリで、ページごと上下にずれてスクロールできなくなるのを防ぐ) */
 #app{position:fixed;top:0;bottom:0;left:0;right:0;width:100%;max-width:520px;margin:0 auto}
+#appdbg{position:fixed;left:0;right:0;bottom:0;z-index:99;background:rgba(0,0,0,.8);color:#0f0;font:11px/1.3 monospace;padding:4px 6px;pointer-events:none;white-space:pre-wrap}
 .screen{position:absolute;inset:0;display:none;flex-direction:column;gap:12px;padding:16px;overflow-y:auto;overflow-x:hidden}
 .screen.active{display:flex}
 .grow{flex:1}
@@ -823,8 +824,21 @@ function swapKids(el, kids) {
   if (uiBusy()) { el._sw = setTimeout(() => swapKids(el, kids), 700); return; }
   el.replaceChildren(...kids);
 }
-['pageshow', 'resize', 'orientationchange'].forEach(ev => addEventListener(ev, () => { if (scrollY || scrollX) scrollTo(0, 0); }));
-document.addEventListener('visibilitychange', () => { if (!document.hidden && (scrollY || scrollX)) scrollTo(0, 0); });
+// 画面の高さを、実際に見えている大きさから測って合わせる(iPhoneのホーム画面アプリで、高さを実際より高く数えてしまうことがあるため)
+function fitApp() {
+  const app = document.getElementById('app'); if (!app) return;
+  const vv = window.visualViewport;
+  const cand = [innerHeight, vv ? vv.height : 0, document.documentElement.clientHeight].filter(x => x > 200);
+  if (cand.length) app.style.height = Math.round(Math.min(...cand)) + 'px';
+  if (scrollY || scrollX) scrollTo(0, 0);
+  const d = document.getElementById('appdbg');
+  if (d) d.textContent = `inner ${innerHeight} / vv ${vv ? Math.round(vv.height) : '-'} / client ${document.documentElement.clientHeight} / screen ${screen.height} / app ${app.getBoundingClientRect().height | 0}`;
+}
+if (/[?&]dbg=1/.test(location.search)) document.body.append(h('div', { id: 'appdbg' }));
+['pageshow', 'resize', 'orientationchange', 'focus'].forEach(ev => addEventListener(ev, fitApp));
+if (window.visualViewport) { visualViewport.addEventListener('resize', fitApp); visualViewport.addEventListener('scroll', fitApp); }
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { fitApp(); setTimeout(fitApp, 300); } });
+fitApp(); setTimeout(fitApp, 400); setInterval(fitApp, 2000);
 function refreshHud() { const el = $('#hud'); if (el) swapKids(el, hudKids().filter(Boolean)); }
 function renderHome() {
   const dyn = $('#title-dyn');
