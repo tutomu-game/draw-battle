@@ -32,7 +32,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;overflow:hidden}
 body{
   background-color:var(--bg);
   background-image:radial-gradient(rgba(27,27,47,.13) 1.6px,transparent 1.6px);
@@ -48,7 +48,8 @@ body{
 }
 h1,h2,h3,p{margin:0}
 h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
-#app{height:100%;max-width:520px;margin:0 auto;position:relative}
+/* ページ全体は動かさない(iPhoneのホーム画面アプリで、ページごと上下にずれてスクロールできなくなるのを防ぐ) */
+#app{position:fixed;top:0;bottom:0;left:0;right:0;width:100%;max-width:520px;margin:0 auto}
 .screen{position:absolute;inset:0;display:none;flex-direction:column;gap:12px;padding:16px;overflow-y:auto;overflow-x:hidden}
 .screen.active{display:flex}
 .grow{flex:1}
@@ -822,6 +823,8 @@ function swapKids(el, kids) {
   if (uiBusy()) { el._sw = setTimeout(() => swapKids(el, kids), 700); return; }
   el.replaceChildren(...kids);
 }
+['pageshow', 'resize', 'orientationchange'].forEach(ev => addEventListener(ev, () => { if (scrollY || scrollX) scrollTo(0, 0); }));
+document.addEventListener('visibilitychange', () => { if (!document.hidden && (scrollY || scrollX)) scrollTo(0, 0); });
 function refreshHud() { const el = $('#hud'); if (el) swapKids(el, hudKids().filter(Boolean)); }
 function renderHome() {
   const dyn = $('#title-dyn');
