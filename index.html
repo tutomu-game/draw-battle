@@ -362,7 +362,8 @@ body.fx-shake{animation:fxShake .45s linear 3}
 /* ---- タブ型ホーム ---- */
 #tabbar{display:none;position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--paper);border-top:3px solid var(--ink);padding:0 6px calc(4px + env(safe-area-inset-bottom))}
 #app[data-scr="title"] #tabbar,#app[data-scr="online"] #tabbar,#app[data-scr="gacha"] #tabbar,#app[data-scr="mis"] #tabbar{display:flex}
-#app[data-scr="title"] .screen.active,#app[data-scr="online"] .screen.active,#app[data-scr="gacha"] .screen.active,#app[data-scr="mis"] .screen.active{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+#app[data-scr="title"] .screen.active::after,#app[data-scr="online"] .screen.active::after,#app[data-scr="gacha"] .screen.active::after,#app[data-scr="mis"] .screen.active::after{content:"";flex:none;height:calc(64px + env(safe-area-inset-bottom))}
+/* 下の余白は、paddingではなく実体のある要素で作る(iPhoneのホーム画面アプリでは、paddingがスクロールの長さに数えられず、最後のボタンがタブの裏に隠れるため) */
 #tabbar .tab{flex:1;position:relative;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:0;padding:7px 0 3px;font-family:var(--f-display);font-size:12px;line-height:1.3;color:var(--ink);cursor:pointer;touch-action:manipulation}
 #tabbar .tab .ic{font-size:25px;line-height:1.15}
 #tabbar .tab .badge{position:absolute;top:1px;right:calc(50% - 32px);margin:0;min-width:20px;height:20px;padding:0 4px;font-size:11px;border-width:2px}
