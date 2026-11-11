@@ -862,16 +862,16 @@ function refreshHud() { const el = $('#hud'); if (el) swapKids(el, hudKids().fil
 function renderHome() {
   const dyn = $('#title-dyn');
   updateTabbar(); updateOnlineBadge();
-  setTimeout(gUpdateBadge, 0); setTimeout(misBadge, 0); setTimeout(titlesCheck, 1500);
+  setTimeout(titlesBadge, 0); setTimeout(gUpdateBadge, 0); setTimeout(misBadge, 0); setTimeout(titlesCheck, 1500);
   const modeBtn = (id, t, desc, col, ic) => h('button', { class: 'card mbig', type: 'button', style: `background:${col}`, onclick: () => { SND.sfx('tap'); S.mode = id; showSetup(); } },
     h('span', { class: 'mic', 'aria-hidden': 'true' }, ic), h('span', {}, h('b', {}, t), h('small', {}, desc)));
   const histBtn = h('div', { class: 'row2', style: 'justify-content:center;gap:8px' },
     h('button', { class: 'btn small', type: 'button', onclick: () => showAlbum() }, '🖼 さくひん帳'),
-    h('button', { class: 'btn small', type: 'button', onclick: () => showTitles() }, '🏅 しょうごう' + (titlesUnclaimed() ? ` (${titlesUnclaimed()})` : '')),
+    h('button', { id: 'tt-btn', class: 'btn small', type: 'button', style: 'position:relative', onclick: () => showTitles() }, '🏅 しょうごう', h('span', { class: 'badge', id: 'tt-badge', hidden: true, 'aria-label': '受け取れるごほうび', style: 'position:absolute;top:-9px;right:-9px;margin:0' })),
     h('button', { class: 'btn small', type: 'button', onclick: showHistory }, '📜 せんれき'));
   const legal = h('p', { style: 'text-align:center;font-size:12px;font-weight:800;opacity:.8' },
     h('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, '利用規約'), ' ・ ', h('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, 'プライバシーポリシー'));
-  fill(dyn, h('div', { id: 'hud', class: 'hud' }, ...hudKids().filter(Boolean)), rankCard(), h('div', { id: 'ev-slot' }, eventBanner()), dailyBtn(),
+  fill(dyn, h('div', { id: 'hud', class: 'hud' }, ...hudKids().filter(Boolean)), rankCard(), h('div', { id: 'tt-slot' }, ttBanner()), h('div', { id: 'ev-slot' }, eventBanner()), dailyBtn(),
     h('div', { style: 'font-weight:900;font-size:14px;padding-left:4px;margin-top:2px' }, 'あそぶ'),
     stageHomeCard(),
     modeBtn('battle', '対戦', '2〜4人で順番に描いて、AIが採点', 'var(--pink)', '👥'),
@@ -3009,7 +3009,7 @@ async function titlesCheck() {
       if (!lsGet(TSEL, null)) lsSet(TSEL, fresh[fresh.length - 1].id);
       SND.sfx('win');
       showToast(fresh.length === 1 ? `🏅 称号ゲット！「${fresh[0].n}」 ごほうびを受け取ろう` : `🏅 称号を${fresh.length}個ゲット！ ごほうびを受け取ろう`, 'みる', () => showTitles());
-      misBadge();
+      misBadge(); titlesBadge();
       refreshRankCard();
     }
   } catch (e) {} finally { titlesBusy = 0; }
@@ -3017,6 +3017,18 @@ async function titlesCheck() {
 const ttClaimed = id => gState().tt.includes(id);
 const tHas = id => !!lsGet(TKEY, {})[id] || ttClaimed(id);
 const titleSel = () => { const id = lsGet(TSEL, null); const t = TITLES.find(x => x.id === id); return t && tHas(t.id) ? t : null; };
+function ttBanner() {
+  const n = titlesUnclaimed(); if (!n) return null;
+  return h('button', { class: 'card', type: 'button', style: 'width:100%;background:#FFE066;display:flex;align-items:center;gap:10px;text-align:left;margin-bottom:8px', onclick: () => { SND.sfx('tap'); showTitles(); } },
+    h('span', { style: 'font-size:26px', 'aria-hidden': 'true' }, '🏅'), h('span', { style: 'flex:1' }, h('b', {}, '称号のごほうびがあるよ！'), h('br'), h('small', {}, `受け取れる称号 ${n}こ → タップして受け取る`)),
+    h('span', { class: 'badge', style: 'margin:0' }, String(n)));
+}
+function titlesBadge() {
+  const sl = $('#tt-slot'); if (sl) swapKids(sl, [ttBanner()].filter(Boolean));
+  const b = $('#tt-badge'), btn = $('#tt-btn'); if (!b) return;
+  const n = titlesUnclaimed(); b.textContent = String(n); b.hidden = !n;
+  if (btn) btn.classList.toggle('primary', !!n);
+}
 const titlesUnclaimed = () => TITLES.filter(t => lsGet(TKEY, {})[t.id] && !ttClaimed(t.id)).length;
 const rewText = id => { const [tix, sh, xp, st] = T_REW[id]; return [tix ? `🎟${tix}` : '', sh ? `💎${sh}` : '', xp ? `XP${xp}` : '', st ? `${STAMP_BY[st][1]}限定スタンプ` : ''].filter(Boolean).join('　'); };
 function titleClaim(id) {
@@ -3029,7 +3041,7 @@ function titleClaim(id) {
   gSave({ ...g, tt: [...g.tt, id], tix: g.tix + tix, shards: g.shards + sh, own });
   if (xp) { setPend(pendXp() + xp); flushXp(); }
   SND.sfx('win'); showToast(`🎁 「${t.n}」のごほうび！ ${rewText(id)}`);
-  refreshRankCard(); showTitles();
+  refreshRankCard(); titlesBadge(); showTitles();
   if (st) setTimeout(() => previewFx(STAMP_BY[st]), 400);
 }
 async function showTitles() {
@@ -3813,7 +3825,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
 
-if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { sgClaim, sgPending, sgRew, startStage, showStages, stageStars, STAGES, titleClaim, T_REW, titlesCheck, titlesCtx, TITLES, statsLoad, showTitles, ALB, albumCollect, showAlbum, challengeTopic, myXp: () => myXp(), lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
+if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { titlesBadge, sgClaim, sgPending, sgRew, startStage, showStages, stageStars, STAGES, titleClaim, T_REW, titlesCheck, titlesCtx, TITLES, statsLoad, showTitles, ALB, albumCollect, showAlbum, challengeTopic, myXp: () => myXp(), lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
 
 function boot(saved) {
   if (saved && typeof saved === 'object') {
