@@ -841,7 +841,8 @@ function dbgInfo() {
   const sc = document.querySelector('.screen.active'), vv = window.visualViewport, app = document.getElementById('app');
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
-    `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}`;
+    `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:19`;
 }
 function dbgToggle() {
   dbgOn = !dbgOn;
@@ -2697,7 +2698,7 @@ async function hostJudge(retry) {
 const HKEY = 'dbHistory';
 const loadHistory = () => { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (e) { return []; } };
 /* ---------- 利用状況の計測(匿名・件数のみ。中身は送らない) ---------- */
-const TM = { k: 'dbTm', t: 0 };
+const TM = { k: 'dbTm', t: 0, err: '' };
 function jstToday() { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
 function tmLoad() {
   let o = lsGet(TM.k, null);
@@ -2720,12 +2721,12 @@ function tmBump(path, key) {
 function tmPush(force) {
   const now = Date.now();
   if (!force && now - TM.t < 90000) { clearTimeout(TM.w); TM.w = setTimeout(() => tmPush(true), 90000); return; }
-  if (!NET || NET.state !== 'ready' || !NET.me) return;
+  if (!NET || NET.state !== 'ready' || !NET.me) { TM.err = 'notready'; return; }
   TM.t = now;
   try {
     const o = tmLoad();
     const doc = { d: o.d, uid: NET.me, first: o.first, s: o.s || 1, p: o.p || {}, ai: o.ai || {}, qAt: o.qAt || 0, ts: now };
-    NET.db.doc('usage/' + o.d + '_' + NET.me).set(doc).catch(() => {});
+    NET.db.doc('usage/' + o.d + '_' + NET.me).set(doc).then(() => { TM.err = ''; }).catch(e => { TM.err = (e && (e.code || e.message)) || 'x'; });
   } catch (e) {}
 }
 (function tmInit() {
