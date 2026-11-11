@@ -378,7 +378,7 @@ body.fx-shake{animation:fxShake .45s linear 3}
 #app[data-scr="title"] #tab-home,#app[data-scr="online"] #tab-online,#app[data-scr="gacha"] #tab-gacha,#app[data-scr="mis"] #tab-mis{color:#D92B6B}
 #app[data-scr="title"] #tab-home::after,#app[data-scr="online"] #tab-online::after,#app[data-scr="gacha"] #tab-gacha::after,#app[data-scr="mis"] #tab-mis::after{content:"";position:absolute;top:-3px;left:22%;right:22%;height:4px;border-radius:0 0 4px 4px;background:#D92B6B}
 #app[data-net="0"] #tabbar .tab.net{display:none}
-#app[data-scr="title"] .me-chip{max-width:132px}
+#app[data-scr="title"] .me-chip{max-width:178px}
 .hud{position:absolute;top:8px;right:54px;z-index:4;display:flex;gap:6px}
 .hchip{display:flex;align-items:center;gap:4px;height:38px;padding:0 10px;border:3px solid var(--ink);border-radius:999px;background:var(--paper);box-shadow:3px 3px 0 var(--ink);font-family:var(--f-display);font-size:15px;color:var(--ink);cursor:pointer;touch-action:manipulation}
 .hchip .hr{color:#E0391F}
@@ -842,7 +842,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:20`;
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:21`;
 }
 function dbgToggle() {
   dbgOn = !dbgOn;
