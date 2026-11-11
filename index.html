@@ -851,7 +851,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:23`;
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:24`;
 }
 function dbgToggle() {
   dbgOn = !dbgOn;
@@ -1705,7 +1705,8 @@ Object.entries(window.DB_EVENTS || {}).forEach(([eid, e]) => (e.stamps || []).fo
 [['kaikin', '🌈', '皆勤', 'sr', 'glow'], ['joushou', '🏆', '常勝', 'hr', 'burst'], ['kancho', '🎭', '館長', 'hr', 'glow'],
  ['gekkan', '👑', '月間皆勤', 'lr', 'gold', '#FFC933'], ['complete', '📚', 'コンプリート', 'lr', 'screen', '#7A5CFF'], ['densetsu', '🐉', '伝説', 'lr', 'screen', '#FF3D8B']]
   .forEach(d => STAMPS.push([d[0], d[1], d[2], d[3], d[4], d[5] || null, null, true]));
-[['stgm5', '🗺️', 'ステージ5', 'sr', 'glow'], ['stgm10', '🧭', 'ステージ10', 'hr', 'burst'], ['stgm15', '🏔️', 'ステージ15', 'hr', 'glow'],
+[['himitsu', '🗝️', 'ひみつ', 'lr', 'gold', '#FFC933'], ['manten', '💮', '満点', 'hr', 'burst'], ['fukuro', '🦉', 'ふくろう', 'sr', 'glow'],
+ [ 'stgm5', '🗺️', 'ステージ5', 'sr', 'glow'], ['stgm10', '🧭', 'ステージ10', 'hr', 'burst'], ['stgm15', '🏔️', 'ステージ15', 'hr', 'glow'],
  ['stgm20', '🏁', 'ステージ20', 'lr', 'gold', '#FFC933'], ['stgall', '🌟', 'ステージ制覇', 'lr', 'screen', '#7A5CFF']]
   .forEach(d => STAMPS.push([d[0], d[1], d[2], d[3], d[4], d[5] || null, null, true]));
 const STAMP_BY = Object.fromEntries(STAMPS.map(d => [d[0], d]));
@@ -2925,8 +2926,9 @@ function statsAdd(s, rec) {
   if (rounds && !(rec.kind === 'online' && !rec.rd)) {
     const avg = (rec.score || 0) / rounds / (rec.kind === 'guess' ? 100 : 30);
     if (rec.kind === 'guess') { if (avg >= 0.7) s.gHi++; }
-    else { if (avg >= 0.8) s.hi++; if (avg >= 0.9) s.ace++; }
+    else { if (avg >= 0.8) s.hi++; if (avg >= 0.9) s.ace++; if (avg >= 1) s.perf = (s.perf || 0) + 1; }
   }
+  { const hr = new Date((rec.ts || Date.now()) + 9 * 3600e3).getUTCHours(); if (hr < 4) s.night = (s.night || 0) + 1; }
 }
 function statsLoad() {
   let s = lsGet(STKEY, null);
@@ -2973,9 +2975,12 @@ const T_REW = {
   glr: [1, 30, 100, null],
   lv5: [1, 0, 40, null],
   lv10: [2, 0, 100, null],
-  lv15: [3, 50, 0, 'densetsu']
+  lv15: [3, 50, 0, 'densetsu'],
+  st5: [1, 0, 60, null], st20: [2, 10, 150, null], sa60: [3, 20, 250, null], p300: [2, 10, 200, null],
+  a150: [2, 10, 150, null], g30: [2, 10, 100, null], f10: [2, 0, 150, null], lv12: [2, 0, 200, null],
+  x1: [3, 0, 300, null], x2: [3, 0, 500, 'himitsu'], x3: [2, 0, 200, 'manten'], x4: [1, 0, 100, 'fukuro']
 };
-const T_GROUPS = ['はじめて', 'うでまえ', '今日の1題', 'オンライン', 'ともだち', 'さくひん帳', 'ガチャ', 'ランク'];
+const T_GROUPS = ['はじめて', 'うでまえ', '今日の1題', 'オンライン', 'ともだち', 'さくひん帳', 'ガチャ', 'ランク', 'ステージ', 'ひみつ'];
 const TITLES = [
   ['first', 'はじめて', '✏️', 'はじめの一枚', 'AIに絵を採点してもらう', 1, c => c.st.plays],
   ['p10', 'はじめて', '🖍️', 'らくがき常連', '10回あそぶ', 10, c => c.st.plays],
@@ -3007,19 +3012,32 @@ const TITLES = [
   ['glr', 'ガチャ', '🌠', 'レジェンド入手', 'レジェンドレア以上を手に入れる', 1, c => c.lr],
   ['lv5', 'ランク', '🔰', '色づかいの達人', 'Lv.5になる', 5, c => c.lv],
   ['lv10', 'ランク', '🎖️', '絵の名匠', 'Lv.10になる', 10, c => c.lv],
-  ['lv15', 'ランク', '🐉', '伝説の絵描き', 'Lv.15になる（最高ランク）', 15, c => c.lv]
-].map(([id, g, e, n, d, max, cur]) => ({ id, g, e, n, d, max, cur }));
+  ['lv15', 'ランク', '🐉', '伝説の絵描き', 'Lv.15になる（最高ランク）', 15, c => c.lv],
+  ['lv12', 'ランク', '🏰', '絵の巨匠', 'Lv.12になる', 12, c => c.lv],
+  ['p300', 'はじめて', '🖌️', '三百枚ぬき', '300回あそぶ', 300, c => c.st.plays],
+  ['a150', 'さくひん帳', '🗂️', 'アトリエ満杯', 'さくひん帳に150題そろえる', 150, c => c.album],
+  ['g30', 'ガチャ', '🧰', '大コレクター', 'ごほうびを30個あつめる', 30, c => c.own],
+  ['f10', 'ともだち', '🎪', '友達の輪', '友達が10人', 10, c => c.friends],
+  ['st5', 'ステージ', '🗺️', 'ぼうけんのはじまり', 'ステージを5つクリアする', 5, c => c.sgClear],
+  ['st20', 'ステージ', '🏁', '道のはて', 'ステージをすべてクリアする', () => STAGES.length || 20, c => c.sgClear],
+  ['sa60', 'ステージ', '🌟', '星のあつめびと', 'ステージの★をぜんぶあつめる', () => (STAGES.length || 20) * 3, c => c.sgStars],
+  ['x1', 'ひみつ', '🎰', '奇跡のひき', 'カプセルでシークレットを引き当てる', 1, c => c.sec, true],
+  ['x2', 'ひみつ', '🗝️', 'ひみつを知る者', 'シークレットを3種類すべてそろえる', 3, c => c.sec, true],
+  ['x3', 'ひみつ', '💮', 'パーフェクト', 'すべてのラウンドで30点満点をとる', 1, c => c.st.perf || 0, true],
+  ['x4', 'ひみつ', '🦉', 'よふかしの絵描き', '深夜0時〜4時にあそぶ', 1, c => c.st.night || 0, true]
+].map(([id, g, e, n, d, max, cur, hid]) => ({ id, g, e, n, d, max, cur, hid: !!hid }));
 const tMax = t => (typeof t.max === 'function' ? t.max() : t.max);
 async function titlesCtx() {
   const st = statsLoad(), g = gState();
   let album = 0, albumAll = 0;
   try { const keys = await ALB.tx('readonly', s => s.getAllKeys()); album = keys.length; albumAll = keys.filter(k => TOPIC_CAT[k]).length; } catch (e) {}
-  let own = 0, lr = 0;
+  let own = 0, lr = 0, sec = 0;
   if (NET.gachaLoaded) {
     const items = gItems().filter(it => g.own.includes(it.id));
-    own = items.length; lr = items.filter(it => it.rar === 'lr' || it.rar === 'sec').length;
+    own = items.length; lr = items.filter(it => it.rar === 'lr' || it.rar === 'sec').length; sec = items.filter(it => it.rar === 'sec').length;
   }
-  return { st, album, albumAll, friends: (NET.friends || []).length, own, lr, lv: rankOf(myXp()).lv };
+  const sgv = Object.values(stageStars());
+  return { st, album, albumAll, friends: (NET.friends || []).length, own, lr, sec, sgClear: sgv.filter(v => v >= 1).length, sgStars: sgv.reduce((a, b) => a + (b || 0), 0), lv: rankOf(myXp()).lv };
 }
 let titlesBusy = 0;
 async function titlesCheck() {
@@ -3076,15 +3094,15 @@ async function showTitles() {
     const has = tHas(t.id), cur = Math.min(t.cur(c), tMax(t)), m = tMax(t), claimed = ttClaimed(t.id);
     const d = has && got[t.id] ? new Date(got[t.id] + 9 * 3600e3) : null;
     return h('div', { class: 'card tcard' + (has ? ' has' : ''), style: 'display:flex;gap:10px;align-items:center;padding:8px 12px' },
-      h('span', { style: 'font-size:30px;line-height:1;flex:none;' + (has ? '' : 'filter:grayscale(1);opacity:.45'), 'aria-hidden': 'true' }, t.e),
+      h('span', { style: 'font-size:30px;line-height:1;flex:none;' + (has ? '' : 'filter:grayscale(1);opacity:.45'), 'aria-hidden': 'true' }, !has && t.hid ? '❓' : t.e),
       h('div', { style: 'flex:1;min-width:0' },
         h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:16px;display:block' }, has ? t.n : '？？？'),
-        h('small', { style: 'font-weight:800;display:block' }, t.d),
+        h('small', { style: 'font-weight:800;display:block' }, !has && t.hid ? 'ひみつの条件… なにかをすると手に入る？' : t.d),
         has ? h('small', { style: 'font-weight:800;opacity:.7;display:block' }, (d ? `${d.getUTCMonth() + 1}/${d.getUTCDate()} 獲得　` : '') + (claimed ? 'ごほうび受け取りずみ' : '🎁 ' + rewText(t.id)))
-            : h('div', { style: 'display:flex;gap:6px;align-items:center;margin-top:3px' },
+            : t.hid ? null : h('div', { style: 'display:flex;gap:6px;align-items:center;margin-top:3px' },
                 h('div', { style: 'flex:1;height:8px;border-radius:5px;background:rgba(27,27,47,.15);overflow:hidden' }, h('div', { style: `height:100%;width:${Math.round(cur / m * 100)}%;background:var(--green)` })),
                 h('small', { style: 'font-weight:900' }, `${cur}/${m}`)),
-        !has ? h('small', { style: 'font-weight:800;opacity:.75;display:block' }, '🎁 ' + rewText(t.id)) : null),
+        !has ? h('small', { style: 'font-weight:800;opacity:.75;display:block' }, '🎁 ' + (t.hid ? '？？？' : rewText(t.id))) : null),
       has && !claimed ? h('button', { class: 'btn small primary', type: 'button', style: 'flex:none', onclick: () => titleClaim(t.id) }, '受け取る')
         : has ? h('button', { class: 'btn small' + (sel && sel.id === t.id ? ' primary' : ''), type: 'button', style: 'flex:none', onclick: () => { lsSet(TSEL, sel && sel.id === t.id ? '' : t.id); refreshRankCard(); showTitles(); } }, sel && sel.id === t.id ? 'つけてる' : 'つける') : null);
   };
@@ -3424,8 +3442,8 @@ function refreshRankCard() { const c = $('#rank-card'); if (c && PROFILE) swapKi
 
 /* ---------- ガチャ(ごほうびカプセル) ---------- */
 const G_RATE = [['miss', 40.5], ['r', 30], ['sr', 17], ['hr', 8], ['lr', 4], ['sec', 0.5]];
-const DUP_SHARDS = { r: 3, sr: 8, hr: 20, lr: 50, sec: 130 };
-const SWAP_COST = { r: 10, sr: 25, hr: 60, lr: 150 };
+const DUP_SHARDS = { r: 2, sr: 5, hr: 12, lr: 30, sec: 60 };
+const SWAP_COST = { r: 15, sr: 40, hr: 100, lr: 250 };
 const MAX_TIX = 10;
 const RAR_ORDER = ['r', 'sr', 'hr', 'lr', 'sec'];
 const RAR_STAR = { r: '★ レア', sr: '★★ スーパーレア', hr: '★★★ ハイパーレア', lr: '★★★★ レジェンドレア', sec: '？？？ シークレット' };
