@@ -851,7 +851,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:22`;
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:23`;
 }
 function dbgToggle() {
   dbgOn = !dbgOn;
@@ -1555,13 +1555,15 @@ async function askAIOnce(sent) {
       images: sent.map(pi => c.drawings[pi].blob),
       modelTier: 'default', cache: false, signal: ctrl.signal
     });
-    if (!res || res.truncated || !res.text) throw { code: 'parse', detail: res && res.truncated ? 'truncated' : 'empty' };
-    const out = guess ? parseGuess(res.text) : parseAI(res.text, sent);
+    if (!res || !res.text) throw { code: 'parse', detail: 'empty' };
+    let out;
+    try { out = guess ? parseGuess(res.text) : parseAI(res.text, sent); }
+    catch (pe) { if (res.truncated && pe && pe.code === 'parse') throw { code: 'parse', detail: 'truncated' }; throw pe; }
     tmBump('ai', 'ok');
     return out;
   } catch (e) {
     if (ctrl.signal.aborted) { tmBump('ai', 'timeout'); throw { code: 'timeout' }; }
-    tmBump('ai', (e && e.code) || 'other');
+    tmBump('ai', e && e.code === 'parse' ? ({ truncated: 'p_trunc', empty: 'p_empty', bad_json: 'p_json', no_json: 'p_json' }[e.detail] || 'p_other') : ((e && e.code) || 'other'));
     throw e;
   } finally { clearTimeout(to); }
 }
