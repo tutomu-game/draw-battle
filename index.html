@@ -842,7 +842,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:19`;
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:20`;
 }
 function dbgToggle() {
   dbgOn = !dbgOn;
@@ -3021,7 +3021,7 @@ const titleSel = () => { const id = lsGet(TSEL, null); const t = TITLES.find(x =
 function ttBanner() {
   const n = titlesUnclaimed(); if (!n) return null;
   return h('button', { class: 'card', type: 'button', style: 'width:100%;background:#FFE066;display:flex;align-items:center;gap:10px;text-align:left;margin-bottom:8px', onclick: () => { SND.sfx('tap'); showTitles(); } },
-    h('span', { style: 'font-size:26px', 'aria-hidden': 'true' }, '🏅'), h('span', { style: 'flex:1' }, h('b', {}, '称号のごほうびがあるよ！'), h('br'), h('small', {}, `受け取れる称号 ${n}こ → タップして受け取る`)),
+    h('span', { style: 'font-size:34px', 'aria-hidden': 'true' }, '🏅'), h('span', { style: 'flex:1;color:var(--ink);line-height:1.3' }, h('b', { style: 'font-size:18px;display:block' }, '称号のごほうびあり！'), h('span', { style: 'font-size:15px;font-weight:800' }, `受け取れる称号 ${n}こ ▶ タップ！`)),
     h('span', { class: 'badge', style: 'margin:0' }, String(n)));
 }
 function titlesBadge() {
