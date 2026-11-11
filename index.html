@@ -224,6 +224,15 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 .buzz-count span{display:block;font-weight:900;font-size:min(7vw,28px);color:#fff;text-shadow:0 2px 6px #000}
 .buzz-final{position:fixed;inset:0;z-index:64;display:grid;place-items:center;pointer-events:none}
 .buzz-final b{font-family:var(--f-display);font-weight:400;font-size:min(16vw,76px);background:linear-gradient(90deg,#ff3b30,#ff9500,#ffd60a,#34c759,#2f6bff,#af52de);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:2px #fff;opacity:0;animation:fxSec 2.2s ease 1.7s forwards}
+.fx-night{position:fixed;inset:0;z-index:58;pointer-events:none;background:radial-gradient(circle at 50% 30%,rgba(60,70,190,.55),rgba(5,8,40,.92));opacity:0;animation:fxBuzzBg 4.2s ease forwards}
+.met{position:fixed;z-index:62;pointer-events:none;width:3px;height:140px;border-radius:3px;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 70%,#bfe0ff);box-shadow:0 0 12px 3px rgba(170,210,255,.8);opacity:0;transform:rotate(35deg);animation:metFly 1.3s ease-in var(--del,0s) forwards}
+@keyframes metFly{0%{opacity:0;transform:translate(0,0) rotate(35deg)}10%{opacity:1}100%{opacity:0;transform:translate(-90vw,90vh) rotate(35deg)}}
+.met-star{position:fixed;z-index:59;pointer-events:none;color:#fff;opacity:0;animation:metTw 1.6s ease-in-out var(--del,0s) infinite}
+@keyframes metTw{0%,100%{opacity:0;transform:scale(.4)}50%{opacity:1;transform:scale(1.1)}}
+.met-final{position:fixed;inset:0;z-index:64;display:grid;place-items:center;pointer-events:none;text-align:center}
+.met-final b{display:block;font-family:var(--f-display);font-weight:400;font-size:min(16vw,76px);color:#fff;letter-spacing:.08em;text-shadow:0 0 22px #8fb4ff,0 4px 0 #2a3a9a;opacity:0;animation:fxSec 2.4s ease 1.2s forwards}
+.met-final small{display:block;font-weight:900;font-size:min(6.5vw,28px);color:#cfe0ff;margin-top:8px;text-shadow:0 2px 6px #000;opacity:0;animation:fxSec 2.4s ease 1.5s forwards}
+@media (prefers-reduced-motion: reduce){.fx-night,.met,.met-star,.met-final{display:none}}
 @media (prefers-reduced-motion: reduce){.gc-cap,.gc-flash,.gc-res .big,.fx-buzz,.buzz-pill,.buzz-count,.buzz-final{animation:none}.fx-buzz,.buzz-pill,.buzz-final{display:none}}
 .badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:8px;border-radius:999px;background:#E0391F;color:#fff;border:2px solid #fff;font-size:13px;font-weight:900;vertical-align:middle;animation:badgePulse 1.4s ease-in-out infinite}
 .badge[hidden]{display:none}
@@ -842,7 +851,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:21`;
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:22`;
 }
 function dbgToggle() {
   dbgOn = !dbgOn;
@@ -1687,7 +1696,7 @@ const STAMPS = [
   ['www', 'www', 'www', 'sr', 'grow', '#2DB55D'], ['torihada', '🥶', '鳥肌', 'sr', 'glow'], ['tensai', '🤯', '天才すぎ', 'sr', 'glow'], ['oshi', '🫶', '推せる', 'sr', 'glow'],
   ['kusa', '草', '草', 'hr', 'grow', '#2DB55D'], ['kami', '👑', '神', 'hr', 'burst'], ['naita', '😭', '泣いた', 'hr', 'rain'],
   ['daisogen', '大草原', '大草原', 'lr', 'screen', '#2DB55D'], ['hyaku', '💯', '100点', 'lr', 'screen', '#E0391F'],
-  ['ryu', '🐉', '龍', 'sec', 'quake', '#FFD23F'], ['buzz', '📈', 'バズった', 'sec', 'buzz', '#FF3D8B']
+  ['ryu', '🐉', '龍', 'sec', 'quake', '#FFD23F'], ['buzz', '📈', 'バズった', 'sec', 'buzz', '#FF3D8B'], ['ryusei', '🌠', '流星', 'sec', 'meteor', '#9FB8FF']
 ];
 Object.entries(window.DB_EVENTS || {}).forEach(([eid, e]) => (e.stamps || []).forEach(d => STAMPS.push([d[0], d[1], d[2], d[3], d[4], d[5] || null, eid, !!d[6]])));
 // 称号の限定スタンプ(ガチャには入らない特典)
@@ -1747,6 +1756,17 @@ function secretFx(def) {
   setTimeout(() => clearInterval(tr), 3300);
   setTimeout(() => els.forEach(e => e.remove()), 4400);
 }
+function meteorFx(def) {
+  const els = [], add = e => { document.body.append(e); els.push(e); return e; };
+  add(h('div', { class: 'fx-night', 'aria-hidden': 'true' }));
+  for (let i = 0; i < 22; i++) add(h('div', { class: 'met-star', 'aria-hidden': 'true', style: `left:${Math.random() * 96}vw;top:${Math.random() * 80}vh;font-size:${10 + Math.random() * 14}px;--del:${(Math.random() * 1.6).toFixed(2)}s` }, i % 3 ? '✦' : '✧'));
+  for (let i = 0; i < 16; i++) add(h('div', { class: 'met', 'aria-hidden': 'true', style: `left:${30 + Math.random() * 75}vw;top:${-20 + Math.random() * 40}vh;--del:${(0.2 + i * 0.16).toFixed(2)}s` }));
+  add(h('div', { class: 'met-final', 'aria-hidden': 'true' }, h('div', {}, h('b', {}, 'SECRET'), h('small', {}, '流星群「ねがいごと」かなう！'))));
+  setTimeout(() => rainFx('🌠', 12, null, 30), 500); setTimeout(() => rainFx('⭐', 18, null, 30), 1400); setTimeout(() => rainFx('✨', 22, null, 30), 2300);
+  try { navigator.vibrate && navigator.vibrate([50, 30, 50, 30, 50, 30, 180]); } catch (e) {}
+  SND.sfx('win'); setTimeout(() => SND.sfx('win'), 800);
+  setTimeout(() => els.forEach(e => e.remove()), 4400);
+}
 function buzzFx(def) {
   const els = [], add = e => { document.body.append(e); els.push(e); return e; };
   add(h('div', { class: 'fx-buzz', 'aria-hidden': 'true' }));
@@ -1781,6 +1801,7 @@ function playStampFx(btn, def) {
     case 'gold': bigFx(txt, col, true); rainFx('🪙', 22, col, 30); rainFx('✨', 16, col, 26); for (let i = 0; i < 14; i++) part(innerWidth / 2, innerHeight / 2, ['🎆', '✨', '🎇', '🎉'][i % 4], { dx: (Math.random() - 0.5) * innerWidth, dy: (Math.random() - 0.5) * innerHeight, rot: 90, sc: 1.6, size: 34, dur: 1.2, del: 0.3 }); break;
     case 'quake': secretFx(def); break;
     case 'buzz': buzzFx(def); break;
+    case 'meteor': meteorFx(def); break;
     default: flyEmoji(btn, typeof txt === 'string' ? txt : '');
   }
 }
@@ -3400,9 +3421,9 @@ setInterval(() => { if ($('#rank-card') && $('#scr-title').classList.contains('a
 function refreshRankCard() { const c = $('#rank-card'); if (c && PROFILE) swapKids(c, rankCardKids().filter(Boolean)); if (PROFILE) updateChip(); refreshHud(); }
 
 /* ---------- ガチャ(ごほうびカプセル) ---------- */
-const G_RATE = [['miss', 40], ['r', 30], ['sr', 17], ['hr', 8], ['lr', 4], ['sec', 1]];
+const G_RATE = [['miss', 40.5], ['r', 30], ['sr', 17], ['hr', 8], ['lr', 4], ['sec', 0.5]];
 const DUP_SHARDS = { r: 3, sr: 8, hr: 20, lr: 50, sec: 130 };
-const SWAP_COST = { r: 10, sr: 25, hr: 60, lr: 150, sec: 400 };
+const SWAP_COST = { r: 10, sr: 25, hr: 60, lr: 150 };
 const MAX_TIX = 10;
 const RAR_ORDER = ['r', 'sr', 'hr', 'lr', 'sec'];
 const RAR_STAR = { r: '★ レア', sr: '★★ スーパーレア', hr: '★★★ ハイパーレア', lr: '★★★★ レジェンドレア', sec: '？？？ シークレット' };
@@ -3489,7 +3510,7 @@ function doPull() {
 }
 function swapItem(it) {
   const g = gState(), cost = SWAP_COST[it.rar];
-  if (g.own.includes(it.id) || g.shards < cost) return false;
+  if (!cost || g.own.includes(it.id) || g.shards < cost) return false;
   gSave({ ...g, shards: g.shards - cost, own: [...g.own, it.id] });
   return true;
 }
@@ -3685,18 +3706,13 @@ function renderGacha(tab) {
       onclick: () => { if (o && it.kind === 'stamp') previewFx(it.def); } },
       h('span', { class: 'ic' }, hidden ? '？' : itemIcon(it) ), h('small', {}, o ? it.name : hidden ? '？？？' : it.give ? '特典' : it.ev ? '限定' : '？'));
   }));
-  const unown = items.filter(it => !own(it) && !it.ev);
-  const secLeft = unown.filter(it => it.rar === 'sec');
+  const unown = items.filter(it => !own(it) && !it.ev && it.rar !== 'sec');
   const swapRow = (icon, title, sub, cost, onSwap) => h('div', { class: 'gc-row' }, h('span', { style: 'font-size:26px;width:44px;text-align:center' }, icon),
     h('div', { style: 'flex:1' }, h('b', {}, title), h('br'), h('small', { style: 'font-weight:800;opacity:.8' }, sub)),
     h('button', { class: 'btn small', type: 'button', disabled: g.shards < cost, onclick: onSwap }, '💎' + cost));
-  const swap = h('div', { class: 'stack' }, h('small', { style: 'font-weight:800' }, 'ダブりやハズレで貯まったカケラで、好きなものと交換できます。'),
+  const swap = h('div', { class: 'stack' }, h('small', { style: 'font-weight:800' }, 'ダブりやハズレで貯まったカケラで、好きなものと交換できます。（シークレットはカプセルからのみ）'),
     unown.length ? [
-      ...unown.filter(it => it.rar !== 'sec').map(it => swapRow(itemIcon(it), it.name, RAR_STAR[it.rar], SWAP_COST[it.rar], () => { if (swapItem(it)) { showToast(it.name + 'を手に入れました！'); renderGacha(); } })),
-      secLeft.length ? swapRow('？', '？？？', 'シークレット（どれか1つ・おまかせ）', SWAP_COST.sec, () => {
-        const it = secLeft[Math.floor(Math.random() * secLeft.length)];
-        if (swapItem(it)) { showToast('シークレットを手に入れました！'); renderGacha(); setTimeout(() => previewFx(it.def), 300); }
-      }) : null
+      ...unown.map(it => swapRow(itemIcon(it), it.name, RAR_STAR[it.rar], SWAP_COST[it.rar], () => { if (swapItem(it)) { showToast(it.name + 'を手に入れました！'); renderGacha(); } })),
     ] : h('p', { style: 'font-weight:800' }, '🎉 すべて手に入れました！'));
   const tabs = h('div', { class: 'seg', role: 'group', 'aria-label': '表示' },
     h('button', { type: 'button', 'aria-pressed': String(gTab === 'zukan'), onclick: () => renderGacha('zukan') }, `図鑑 ${items.filter(own).length}/${items.length}`),
@@ -3709,7 +3725,7 @@ function renderGacha(tab) {
       h('button', { class: 'btn primary big', type: 'button', disabled: g.tix < 1, onclick: pullUI }, g.tix < 1 ? '券がありません' : 'カプセルをひく（券1枚）'),
       h('small', { style: 'font-weight:800;opacity:.85' }, '券は、毎日1枚と、ランクアップごとにもらえます（最大10枚）'),
       h('details', { style: 'text-align:left;font-weight:800;font-size:13px' }, h('summary', {}, '出やすさ（提供割合）'),
-        h('p', { style: 'margin:6px 0 0;line-height:1.7' }, 'ハズレ 40％ ／ ★レア 30％ ／ ★★スーパーレア 17％ ／ ★★★ハイパーレア 8％ ／ ★★★★レジェンドレア 4％ ／ シークレット 1％',
+        h('p', { style: 'margin:6px 0 0;line-height:1.7' }, 'ハズレ 40.5％ ／ ★レア 30％ ／ ★★スーパーレア 17％ ／ ★★★ハイパーレア 8％ ／ ★★★★レジェンドレア 4％ ／ シークレット 0.5％（カケラ交換はできません）',
           h('br'), 'ハズレでも ♥ボーナス＋1 と 💎カケラ＋2 がもらえます。すでに持っているものが出たときは、カケラになります。'))),
     ...gifts.map(gf => h('div', { class: 'card stack', style: 'text-align:center;background:#FFF3C4' },
       h('b', {}, '🎁 運営からのプレゼント'), h('p', { style: 'font-weight:800' }, gf.title || ''), gf.msg ? h('small', { style: 'font-weight:700' }, gf.msg) : null,
@@ -3826,7 +3842,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
 
-if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { titlesBadge, sgClaim, sgPending, sgRew, startStage, showStages, stageStars, STAGES, titleClaim, T_REW, titlesCheck, titlesCtx, TITLES, statsLoad, showTitles, ALB, albumCollect, showAlbum, challengeTopic, myXp: () => myXp(), lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
+if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { previewFx, STAMP_BY, G_RATE, swapItem, titlesBadge, sgClaim, sgPending, sgRew, startStage, showStages, stageStars, STAGES, titleClaim, T_REW, titlesCheck, titlesCtx, TITLES, statsLoad, showTitles, ALB, albumCollect, showAlbum, challengeTopic, myXp: () => myXp(), lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
 
 function boot(saved) {
   if (saved && typeof saved === 'object') {
