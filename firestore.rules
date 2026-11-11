@@ -225,6 +225,20 @@ service cloud.firestore {
         && request.resource.data.reason.size() < 100
         && (!('img' in request.resource.data) || (request.resource.data.img is string && request.resource.data.img.size() < 300000));
     }
+    // 利用状況(匿名の件数のみ)。書くのは本人、読むのは admins/{uid} がある人だけ
+    match /usage/{id} {
+      allow create, update: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.d == jstDate()
+        && id == request.resource.data.d + '_' + request.auth.uid
+        && request.resource.data.keys().hasOnly(['d', 'uid', 'first', 's', 'p', 'ai', 'qAt', 'ts'])
+        && request.resource.data.p is map && request.resource.data.p.size() < 12
+        && request.resource.data.ai is map && request.resource.data.ai.size() < 12;
+      allow read: if signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    match /admins/{id} {
+      allow read: if signedIn() && request.auth.uid == id;
+    }
     match /dailyImg/{id} {
       allow read: if signedIn();
       allow create: if signedIn()

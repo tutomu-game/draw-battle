@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>らくがきAI 運営</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;margin:0;padding:16px;background:#f6f3ee;color:#222;max-width:640px;margin:auto}
+h1{font-size:20px}h2{font-size:15px;margin:20px 0 6px}
+.card{background:#fff;border-radius:12px;padding:12px 14px;margin:8px 0;box-shadow:0 1px 3px #0002}
+.big{font-size:28px;font-weight:700}.sm{color:#666;font-size:12px}
+.row{display:flex;gap:8px}.row>.card{flex:1;text-align:center}
+button{font-size:16px;padding:10px 16px;border-radius:10px;border:0;background:#e85d4a;color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:4px 6px;text-align:right;border-bottom:1px solid #eee}td:first-child,th:first-child{text-align:left}
+.bar{display:inline-block;height:8px;background:#e85d4a;border-radius:4px;vertical-align:middle}
+.warn{color:#c0392b;font-weight:700}code{word-break:break-all;background:#eee;padding:2px 4px;border-radius:4px}
+</style></head><body>
+<h1>らくがきAI 運営ビュー</h1>
+<div id="out"><button id="go">Googleでログイン</button></div>
+<p class="sm">AIの詳細なリクエスト数は <a href="https://dash.cloudflare.com/" target="_blank">Cloudflare</a> でも確認できます。</p>
+<script src="config.js"></script>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js';
+import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js';
+import {getFirestore,collection,query,where,getDocs,doc,getDoc} from 'https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js';
+const app=initializeApp(window.DRAW_CONFIG.firebase),auth=getAuth(app),db=getFirestore(app);
+const out=document.getElementById('out');
+const jst=o=>new Date(Date.now()+9*3600e3-o*864e5).toISOString().slice(0,10);
+document.getElementById('go').onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>out.textContent='ログイン失敗: '+e.code);
+onAuthStateChanged(auth,async u=>{
+  if(!u||u.isAnonymous)return;
+  out.textContent='読み込み中…';
+  let ok=false;try{ok=(await getDoc(doc(db,'admins',u.uid))).exists();}catch(e){}
+  if(!ok){out.innerHTML='<div class="card">管理者として登録されていません。<br>Firebaseコンソール → Firestore に <b>admins</b> コレクションを作り、ドキュメントID に次の値を入れて(フィールドは何でもOK)保存してください。<br><br><code>'+u.uid+'</code></div>';return;}
+  const days=[];for(let i=0;i<14;i++)days.push(jst(i));
+  let docs=[];
+  try{const sn=await getDocs(query(collection(db,'usage'),where('d','>=',days[13])));docs=sn.docs.map(d=>d.data());}
+  catch(e){out.textContent='取得失敗: '+e.code;return;}
+  const by={};days.forEach(d=>by[d]={u:new Set(),n:0,s:0,p:{},ai:{},q:0,qAt:0});
+  const firstSeen={};
+  docs.forEach(x=>{const b=by[x.d];if(!b)return;b.u.add(x.uid);b.s+=x.s||0;
+    if(x.first===x.d)b.n++;
+    for(const k in x.p||{})b.p[k]=(b.p[k]||0)+x.p[k];
+    for(const k in x.ai||{})b.ai[k]=(b.ai[k]||0)+x.ai[k];
+    if(x.ai&&x.ai.quota){b.q++;if(x.qAt&&(!b.qAt||x.qAt<b.qAt))b.qAt=x.qAt;}});
+  const sum=o=>Object.values(o).reduce((a,b)=>a+b,0);
+  const t=by[days[0]],y=by[days[1]];
+  const tm=ms=>ms?new Date(ms+9*3600e3).toISOString().slice(11,16):'-';
+  const ret=(()=>{const ys=new Set(docs.filter(x=>x.d===days[1]&&x.first===x.d).map(x=>x.uid));if(!ys.size)return '-';let k=0;docs.forEach(x=>{if(x.d===days[0]&&ys.has(x.uid))k++;});return Math.round(k/ys.size*100)+'% ('+k+'/'+ys.size+')';})();
+  const max=Math.max(1,...days.map(d=>by[d].u.size));
+  let h='<h2>今日 ('+days[0]+')</h2><div class="row"><div class="card"><div class="big">'+t.u.size+'</div><div class="sm">利用者</div></div><div class="card"><div class="big">'+t.n+'</div><div class="sm">新規</div></div><div class="card"><div class="big">'+sum(t.p)+'</div><div class="sm">プレイ数</div></div></div>';
+  const aiTot=sum(t.ai),aiOk=t.ai.ok||0;
+  h+='<h2>AI審査 (今日)</h2><div class="card">成功 <b>'+aiOk+'</b> / 呼び出し '+aiTot+'<br>'+Object.entries(t.ai).filter(([k])=>k!=='ok').map(([k,v])=>k+': '+v).join(' / ')+(t.ai.quota?'<br><span class="warn">無料枠切れ '+t.q+'人が経験 (最初 '+tm(t.qAt)+')</span>':'')+'<div class="sm">※ AIの呼び出し数は再試行を含みます。無料枠の目安は1日約500回。</div></div>';
+  h+='<h2>モード別プレイ (今日)</h2><div class="card">'+(Object.entries(t.p).map(([k,v])=>k+': '+v).join(' / ')||'まだなし')+'</div>';
+  h+='<h2>昨日の新規が今日も来た率</h2><div class="card">'+ret+'</div>';
+  h+='<h2>14日間の推移</h2><div class="card"><table><tr><th>日付</th><th>人数</th><th>新規</th><th>プレイ</th><th>AI成功</th><th>枠切れ</th></tr>'+days.map(d=>{const b=by[d];return '<tr><td>'+d.slice(5)+'</td><td><span class="bar" style="width:'+Math.round(b.u.size/max*60)+'px"></span> '+b.u.size+'</td><td>'+b.n+'</td><td>'+sum(b.p)+'</td><td>'+(b.ai.ok||0)+'</td><td>'+b.q+'</td></tr>';}).join('')+'</table><div class="sm">利用者は計測が有効な端末のみ。端末ごとに1人として数えます。</div></div>';
+  out.innerHTML=h;
+});
+</script></body></html>

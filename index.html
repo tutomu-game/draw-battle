@@ -1546,9 +1546,12 @@ async function askAIOnce(sent) {
       modelTier: 'default', cache: false, signal: ctrl.signal
     });
     if (!res || res.truncated || !res.text) throw { code: 'parse', detail: res && res.truncated ? 'truncated' : 'empty' };
-    return guess ? parseGuess(res.text) : parseAI(res.text, sent);
+    const out = guess ? parseGuess(res.text) : parseAI(res.text, sent);
+    tmBump('ai', 'ok');
+    return out;
   } catch (e) {
-    if (ctrl.signal.aborted) throw { code: 'timeout' };
+    if (ctrl.signal.aborted) { tmBump('ai', 'timeout'); throw { code: 'timeout' }; }
+    tmBump('ai', (e && e.code) || 'other');
     throw e;
   } finally { clearTimeout(to); }
 }
@@ -2134,7 +2137,7 @@ async function netInit() {
   NET.state = !NET.db ? 'nodb' : !NET.me ? 'noid' : can === false ? 'ro' : 'ready';
   if (NET.state === 'ready') {
     if (!PROFILE) await adoptCloudProfile();
-    startNet(); pushProfile().then(flushXp);
+    startNet(); pushProfile().then(flushXp); tmPush(true);
   }
   use('room').then(r => { NET.room = r; if (r && NET.state === 'ready') startRoom(); }).catch(() => {});
   refreshOnline();
@@ -2693,6 +2696,43 @@ async function hostJudge(retry) {
 /* ---------- 戦歴 ---------- */
 const HKEY = 'dbHistory';
 const loadHistory = () => { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (e) { return []; } };
+/* ---------- 利用状況の計測(匿名・件数のみ。中身は送らない) ---------- */
+const TM = { k: 'dbTm', t: 0 };
+function jstToday() { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
+function tmLoad() {
+  let o = lsGet(TM.k, null);
+  const d = jstToday();
+  if (!o || o.d !== d) { o = { d, s: 1, p: {}, ai: {}, qAt: 0 }; }
+  let f = lsGet('dbFirst', null);
+  if (!f) { f = d; lsSet('dbFirst', f); }
+  o.first = f;
+  return o;
+}
+function tmBump(path, key) {
+  try {
+    const o = tmLoad();
+    const m = o[path] || (o[path] = {});
+    m[key] = (m[key] || 0) + 1;
+    if (path === 'ai' && key === 'quota' && !o.qAt) o.qAt = Date.now();
+    lsSet(TM.k, o); tmPush();
+  } catch (e) {}
+}
+function tmPush(force) {
+  const now = Date.now();
+  if (!force && now - TM.t < 90000) { clearTimeout(TM.w); TM.w = setTimeout(() => tmPush(true), 90000); return; }
+  if (!NET || NET.state !== 'ready' || !NET.me) return;
+  TM.t = now;
+  try {
+    const o = tmLoad();
+    const doc = { d: o.d, uid: NET.me, first: o.first, s: o.s || 1, p: o.p || {}, ai: o.ai || {}, qAt: o.qAt || 0, ts: now };
+    NET.db.doc('usage/' + o.d + '_' + NET.me).set(doc).catch(() => {});
+  } catch (e) {}
+}
+(function tmInit() {
+  try { const o = tmLoad(); if (o.n) o.s = (o.s || 1) + 1; o.n = 1; lsSet(TM.k, o); } catch (e) {}
+  document.addEventListener('visibilitychange', () => { if (document.hidden) tmPush(true); });
+  window.addEventListener('pagehide', () => tmPush(true));
+})();
 function recordHistory(rec) {
   try {
     const list = loadHistory();
@@ -2700,7 +2740,7 @@ function recordHistory(rec) {
     if (rec.id && list.some(x => x.id === rec.id)) { fresh = false; const i = list.findIndex(x => x.id === rec.id); list[i] = { ...list[i], ...rec }; }
     else list.push({ ts: Date.now(), ...rec });
     localStorage.setItem(HKEY, JSON.stringify(list.slice(-100)));
-    if (fresh) { setTimeout(() => awardXp(rec), 0); setTimeout(() => misCount(rec), 0); setTimeout(() => titlesAfter(rec), 0); }
+    if (fresh) { tmBump('p', rec.kind === 'battle' && S.stage != null ? 'stage' : (rec.kind || 'other')); setTimeout(() => awardXp(rec), 0); setTimeout(() => misCount(rec), 0); setTimeout(() => titlesAfter(rec), 0); }
   } catch (e) {}
 }
 const KIND_NAME = { battle: 'ひとりで1題', attack: '縛りチャレンジ', guess: 'AIに当てさせろ', online: 'オンライン対戦', daily: '今日の1題' };
