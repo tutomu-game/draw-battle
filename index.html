@@ -1022,7 +1022,7 @@ function showIntro() {
           h('i'), h('b', {}, AXES[k].name), h('span', {}, AXES[k].hint)))));
   fill(el,
     h('div', {}, h('span', { class: 'pill' }, `ROUND ${S.round + 1} / ${S.total}`)),
-    topicBlock(c, S.mode === 'battle', t => { c.topic = t; c.custom = true; showIntro(); }, showIntro),
+    topicBlock(c, S.mode === 'battle' && !S.challenge, t => { c.topic = t; c.custom = true; showIntro(); }, showIntro),
     evTopicTag(c.topic),
     ruleCard, info,
     h('div', { class: 'judge-row' }, badge(c.judge), h('div', {}, h('div', { style: 'font-size:12px;font-weight:800;opacity:.8' }, '審査員'), h('b', { style: 'font-family:var(--f-display);font-weight:400' }, c.judge.name))),
