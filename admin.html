@@ -10,6 +10,7 @@ h1{font-size:20px}h2{font-size:15px;margin:20px 0 6px}
 .big{font-size:28px;font-weight:700}.sm{color:#666;font-size:12px}
 .row{display:flex;gap:8px}.row>.card{flex:1;text-align:center}
 button{font-size:16px;padding:10px 16px;border-radius:10px;border:0;background:#e85d4a;color:#fff}
+tr[data-d],.tap{cursor:pointer}tr[data-d]:active{background:#fee}.ul{font-size:13px}.ul div{padding:5px 0;border-bottom:1px solid #eee}
 table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:4px 6px;text-align:right;border-bottom:1px solid #eee}td:first-child,th:first-child{text-align:left}
 .bar{display:inline-block;height:8px;background:#e85d4a;border-radius:4px;vertical-align:middle}
 .warn{color:#c0392b;font-weight:700}code{word-break:break-all;background:#eee;padding:2px 4px;border-radius:4px}
@@ -47,12 +48,24 @@ onAuthStateChanged(auth,async u=>{
   const tm=ms=>ms?new Date(ms+9*3600e3).toISOString().slice(11,16):'-';
   const ret=(()=>{const ys=new Set(docs.filter(x=>x.d===days[1]&&x.first===x.d).map(x=>x.uid));if(!ys.size)return '-';let k=0;docs.forEach(x=>{if(x.d===days[0]&&ys.has(x.uid))k++;});return Math.round(k/ys.size*100)+'% ('+k+'/'+ys.size+')';})();
   const max=Math.max(1,...days.map(d=>by[d].u.size));
-  let h='<h2>今日 ('+days[0]+')</h2><div class="row"><div class="card"><div class="big">'+t.u.size+'</div><div class="sm">利用者</div></div><div class="card"><div class="big">'+t.n+'</div><div class="sm">新規</div></div><div class="card"><div class="big">'+sum(t.p)+'</div><div class="sm">プレイ数</div></div></div>';
+  let h='<h2>今日 ('+days[0]+')</h2><div class="row"><div class="card tap" data-d="'+days[0]+'"><div class="big">'+t.u.size+'</div><div class="sm">利用者(タップで名前)</div></div><div class="card"><div class="big">'+t.n+'</div><div class="sm">新規</div></div><div class="card"><div class="big">'+sum(t.p)+'</div><div class="sm">プレイ数</div></div></div>';
   const aiTot=sum(t.ai),aiOk=t.ai.ok||0;
   h+='<h2>AI審査 (今日)</h2><div class="card">成功 <b>'+aiOk+'</b> / 呼び出し '+aiTot+'<br>'+Object.entries(t.ai).filter(([k])=>k!=='ok').map(([k,v])=>({p_trunc:'返事が途中で切れた',p_empty:'返事が空',p_json:'形式が崩れた',p_other:'点数が足りない等',parse:'読み取り失敗(旧)',quota:'無料枠切れ',timeout:'時間切れ',network:'通信',server:'サーバー',rate_limited:'混雑'}[k]||k)+': '+v).join(' / ')+(t.ai.quota?'<br><span class="warn">無料枠切れ '+t.q+'人が経験 (最初 '+tm(t.qAt)+')</span>':'')+'<div class="sm">※ AIの呼び出し数は再試行を含みます。無料枠の目安は1日約500回。</div></div>';
   h+='<h2>モード別プレイ (今日)</h2><div class="card">'+(Object.entries(t.p).map(([k,v])=>k+': '+v).join(' / ')||'まだなし')+'</div>';
   h+='<h2>昨日の新規が今日も来た率</h2><div class="card">'+ret+'</div>';
-  h+='<h2>14日間の推移</h2><div class="card"><table><tr><th>日付</th><th>人数</th><th>新規</th><th>プレイ</th><th>AI成功</th><th>枠切れ</th></tr>'+days.map(d=>{const b=by[d];return '<tr><td>'+d.slice(5)+'</td><td><span class="bar" style="width:'+Math.round(b.u.size/max*60)+'px"></span> '+b.u.size+'</td><td>'+b.n+'</td><td>'+sum(b.p)+'</td><td>'+(b.ai.ok||0)+'</td><td>'+b.q+'</td></tr>';}).join('')+'</table><div class="sm">利用者は計測が有効な端末のみ。端末ごとに1人として数えます。</div></div>';
+  h+='<h2>14日間の推移</h2><div class="card"><table><tr><th>日付</th><th>人数</th><th>新規</th><th>プレイ</th><th>AI成功</th><th>枠切れ</th></tr>'+days.map(d=>{const b=by[d];return '<tr data-d="'+d+'"><td>'+d.slice(5)+'</td><td><span class="bar" style="width:'+Math.round(b.u.size/max*60)+'px"></span> '+b.u.size+'</td><td>'+b.n+'</td><td>'+sum(b.p)+'</td><td>'+(b.ai.ok||0)+'</td><td>'+b.q+'</td></tr>';}).join('')+'</table><div class="sm">日付の行をタップすると、その日の利用者が見られます。利用者は計測が有効な端末のみで、端末ごとに1人として数えます。</div></div><div id="ulist"></div>';
   out.innerHTML=h;
+  const names={};
+  const nameOf=async uid=>{if(uid in names)return names[uid];try{const d=await getDoc(doc(db,'players',uid));names[uid]=d.exists()?d.data():null;}catch(e){names[uid]=null;}return names[uid];};
+  const esc=x=>String(x).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const show=async d=>{
+    const box=document.getElementById('ulist');box.innerHTML='<div class="card sm">読み込み中…</div>';
+    const list=docs.filter(x=>x.d===d);
+    const rows=await Promise.all(list.map(async x=>{const p=await nameOf(x.uid);return {x,p};}));
+    rows.sort((a,b)=>sum(b.x.p||{})-sum(a.x.p||{}));
+    box.innerHTML='<h2>'+d+' の利用者 ('+rows.length+'人)</h2><div class="card ul">'+(rows.map(({x,p})=>'<div><b>'+esc(p&&p.name||'(名前なし)')+'</b>'+(x.first===x.d?' <span class="warn">新規</span>':'')+'<br><span class="sm">プレイ '+sum(x.p||{})+'回'+(Object.keys(x.p||{}).length?'('+Object.entries(x.p).map(([k,v])=>k+':'+v).join(' / ')+')':'')+' ・ AI成功 '+((x.ai&&x.ai.ok)||0)+' ・ 起動 '+(x.s||1)+'回'+(p&&typeof p.xp==='number'?' ・ XP '+p.xp:'')+'</span></div>').join('')||'まだいません')+'</div>';
+    box.scrollIntoView({behavior:'smooth',block:'start'});
+  };
+  out.querySelectorAll('[data-d]').forEach(el=>el.onclick=()=>show(el.dataset.d));
 });
 </script></body></html>
