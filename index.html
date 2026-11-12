@@ -861,7 +861,8 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:27`;
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:28` +
+    (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
   dbgOn = !dbgOn;
@@ -1484,9 +1485,12 @@ pick は選択肢の番号（1始まり）。`;
 
 
 // AIの返事のJSONが少し崩れていても読めるようにする(コメント内の " や、文字列中の改行、末尾のカンマなど)
+function aiBadLog(detail, text) {
+  try { const l = lsGet('dbAiBad', []); l.unshift({ d: detail, n: String(text).length, t: String(text).slice(0, 260), at: Date.now() }); lsSet('dbAiBad', l.slice(0, 4)); } catch (e) {}
+}
 function lenientJSON(text) {
   const a = text.indexOf('{');
-  if (a < 0) throw { code: 'parse', detail: 'no_json' };
+  if (a < 0) { aiBadLog('no_json', text); throw { code: 'parse', detail: 'no_json' }; }
   const b = text.lastIndexOf('}');
   const raw = text.slice(a, b > a ? b + 1 : text.length);
   try { return JSON.parse(raw); } catch (e) {}
@@ -1512,7 +1516,7 @@ function lenientJSON(text) {
   for (let i = 0; i < out.length; i++) { const c = out[i]; if (c === '\\' && q) { i++; continue; } if (c === '"') q = !q; else if (!q) { if (c === '{') open++; else if (c === '}') open--; else if (c === '[') ob++; else if (c === ']') ob--; } }
   out += ']'.repeat(Math.max(0, ob)) + '}'.repeat(Math.max(0, open));
   try { return JSON.parse(out); }
-  catch (e) { try { console.warn('bad_json:', text.slice(0, 400)); } catch (_) {} throw { code: 'parse', detail: 'bad_json' }; }
+  catch (e) { aiBadLog('bad_json', text); throw { code: 'parse', detail: 'bad_json' }; }
 }
 function parseGuess(text) {
   const obj = lenientJSON(text);
