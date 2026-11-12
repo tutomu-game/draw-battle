@@ -861,7 +861,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:28` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:29` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -1492,7 +1492,9 @@ function lenientJSON(text) {
   const a = text.indexOf('{');
   if (a < 0) { aiBadLog('no_json', text); throw { code: 'parse', detail: 'no_json' }; }
   const b = text.lastIndexOf('}');
-  const raw = text.slice(a, b > a ? b + 1 : text.length);
+  let raw = text.slice(a, b > a ? b + 1 : text.length);
+  try { return JSON.parse(raw); } catch (e) {}
+  raw = raw.replace(/,\s*"\s*([}\]])/g, '$1'); // 値のあとに迷い込んだ " を除く
   try { return JSON.parse(raw); } catch (e) {}
   // 文字を1つずつ見て直す
   let out = '', inStr = false;
@@ -1510,11 +1512,18 @@ function lenientJSON(text) {
     out += ch;
   }
   if (inStr) out += '"';
-  out = out.replace(/,\s*([}\]])/g, '$1');
-  // 閉じ括弧が足りないとき(途中で切れた)を補う
-  let open = 0, ob = 0, q = false;
-  for (let i = 0; i < out.length; i++) { const c = out[i]; if (c === '\\' && q) { i++; continue; } if (c === '"') q = !q; else if (!q) { if (c === '{') open++; else if (c === '}') open--; else if (c === '[') ob++; else if (c === ']') ob--; } }
-  out += ']'.repeat(Math.max(0, ob)) + '}'.repeat(Math.max(0, open));
+  out = out.replace(/,\s*"\s*([}\]])/g, '$1').replace(/,\s*([}\]])/g, '$1');
+  // 括弧を数え直す: 余分な閉じ括弧は捨て、足りない分(途中で切れた)は順に補う
+  { const st = [], buf = []; let q = false;
+    for (let i = 0; i < out.length; i++) {
+      const c = out[i];
+      if (q) { buf.push(c); if (c === '\\') { buf.push(out[i + 1] || ''); i++; } else if (c === '"') q = false; continue; }
+      if (c === '"') { q = true; buf.push(c); continue; }
+      if (c === '{' || c === '[') { st.push(c === '{' ? '}' : ']'); buf.push(c); continue; }
+      if (c === '}' || c === ']') { if (!st.length) continue; if (st[st.length - 1] === c) { st.pop(); buf.push(c); } else { buf.push(st.pop()); i--; } continue; }
+      buf.push(c);
+    }
+    out = buf.join('') + st.reverse().join(''); }
   try { return JSON.parse(out); }
   catch (e) { aiBadLog('bad_json', text); throw { code: 'parse', detail: 'bad_json' }; }
 }
