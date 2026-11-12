@@ -861,7 +861,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:26`;
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:27`;
 }
 function dbgToggle() {
   dbgOn = !dbgOn;
@@ -3109,7 +3109,7 @@ function titlesBadge() {
   const n = titlesUnclaimed(); b.textContent = String(n); b.hidden = !n;
   if (btn) btn.classList.toggle('primary', !!n);
 }
-const titlesUnclaimed = () => TITLES.filter(t => lsGet(TKEY, {})[t.id] && !ttClaimed(t.id)).length;
+const titlesUnclaimed = () => !NET.gachaLoaded ? 0 : TITLES.filter(t => lsGet(TKEY, {})[t.id] && !ttClaimed(t.id)).length;
 const rewText = id => { const [tix, sh, xp, st] = T_REW[id]; return [tix ? `🎟${tix}` : '', sh ? `💎${sh}` : '', xp ? `XP${xp}` : '', st ? `${STAMP_BY[st][1]}限定スタンプ` : ''].filter(Boolean).join('　'); };
 function titleClaim(id) {
   if (NET.state !== 'ready' || !NET.gachaLoaded) { showToast('つながるまで少し待ってね'); return; }
@@ -3257,6 +3257,7 @@ function sgRew(key) {
 const sgDone = k => gState().sg.includes(k);
 function sgPending(onlyStage) {
   const m = stageStars(), out = [];
+  if (!NET.gachaLoaded) return out;
   for (let i = 0; i < Math.min(SG_N, STAGES.length); i++) {
     if (onlyStage != null && onlyStage !== i) continue;
     for (let s = 1; s <= (m[i] || 0); s++) { const k = `${i}_${s}`; if (!sgDone(k)) out.push(k); }
@@ -3525,7 +3526,8 @@ function startGacha() {
   NET.gachaStarted = true;
   NET.db.doc('gacha/' + NET.me).onSnapshot(sn => {
     NET.gachaExists = sn.exists; NET.gacha = sn.exists ? sn.data() : null; NET.gachaLoaded = true;
-    gUpdateBadge(); autoGrants();
+    gUpdateBadge(); autoGrants(); titlesBadge();
+    if ($('#scr-title').classList.contains('active')) renderHome();
     if ($('#scr-gacha').classList.contains('active') && !document.querySelector('.gc-ov')) renderGacha();
   }, () => {});
   NET.db.collection('events').get().then(sn => { NET.events = {}; sn.docs.forEach(d => { NET.events[d.id] = d.data(); }); gUpdateBadge(); misBadge(); refreshEvBanner(); if ($('#scr-mis').classList.contains('active')) renderMis(); }).catch(() => {});
