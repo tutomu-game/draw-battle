@@ -237,6 +237,7 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 .badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;margin-left:8px;border-radius:999px;background:#E0391F;color:#fff;border:2px solid #fff;font-size:13px;font-weight:900;vertical-align:middle;animation:badgePulse 1.4s ease-in-out infinite}
 .badge[hidden]{display:none}
 @keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+#scr-stage .stg-th{position:absolute;left:50%;transform:translateX(-50%);background:#fff;border:3px solid var(--ink);border-radius:999px;padding:3px 14px;font-family:var(--f-display);font-size:15px;white-space:nowrap;box-shadow:0 3px 0 var(--ink);z-index:1}
 #intro-modal{position:fixed;inset:0;z-index:72;background:rgba(27,27,47,.7);display:flex;align-items:center;justify-content:center;padding:16px}
 #intro-modal .ib{max-width:360px;width:100%;background:#fff;text-align:center;display:flex;flex-direction:column;gap:10px;max-height:92vh;overflow:auto}
 #intro-modal .ie{font-size:58px;line-height:1}
@@ -861,7 +862,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:29` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:30` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -1731,7 +1732,8 @@ Object.entries(window.DB_EVENTS || {}).forEach(([eid, e]) => (e.stamps || []).fo
   .forEach(d => STAMPS.push([d[0], d[1], d[2], d[3], d[4], d[5] || null, null, true]));
 [['himitsu', '🗝️', 'ひみつ', 'lr', 'gold', '#FFC933'], ['manten', '💮', '満点', 'hr', 'burst'], ['fukuro', '🦉', 'ふくろう', 'sr', 'glow'],
  [ 'stgm5', '🗺️', 'ステージ5', 'sr', 'glow'], ['stgm10', '🧭', 'ステージ10', 'hr', 'burst'], ['stgm15', '🏔️', 'ステージ15', 'hr', 'glow'],
- ['stgm20', '🏁', 'ステージ20', 'lr', 'gold', '#FFC933'], ['stgall', '🌟', 'ステージ制覇', 'lr', 'screen', '#7A5CFF']]
+ ['stgm20', '🏁', 'ステージ20', 'lr', 'gold', '#FFC933'], ['stgall', '🌟', 'ステージ制覇', 'lr', 'screen', '#7A5CFF'],
+ ['thw', '⛄', '冬の旅', 'hr', 'glow'], ['thz', '🦁', 'どうぶつ園', 'hr', 'glow'], ['thf', '🍰', 'おいしい世界', 'hr', 'glow'], ['thv', '🚀', '乗りもの大集合', 'hr', 'glow']]
   .forEach(d => STAMPS.push([d[0], d[1], d[2], d[3], d[4], d[5] || null, null, true]));
 const STAMP_BY = Object.fromEntries(STAMPS.map(d => [d[0], d]));
 const stampOwned = id => { const d = STAMP_BY[id]; return !d || d[3] === 'n' || gOwned(id); };
@@ -3070,8 +3072,8 @@ const TITLES = [
   ['g30', 'ガチャ', '🧰', '大コレクター', 'ごほうびを30個あつめる', 30, c => c.own],
   ['f10', 'ともだち', '🎪', '友達の輪', '友達が10人', 10, c => c.friends],
   ['st5', 'ステージ', '🗺️', 'ぼうけんのはじまり', 'ステージを5つクリアする', 5, c => c.sgClear],
-  ['st20', 'ステージ', '🏁', '道のはて', 'ステージをすべてクリアする', () => STAGES.length || 20, c => c.sgClear],
-  ['sa60', 'ステージ', '🌟', '星のあつめびと', 'ステージの★をぜんぶあつめる', () => (STAGES.length || 20) * 3, c => c.sgStars],
+  ['st20', 'ステージ', '🏁', '道のはて', 'ステージをすべてクリアする', () => SG_ALL, c => c.sgClear],
+  ['sa60', 'ステージ', '🌟', '星のあつめびと', 'ステージの★をぜんぶあつめる', () => SG_ALL * 3, c => c.sgStars],
   ['x1', 'ひみつ', '🎰', '奇跡のひき', 'カプセルでシークレットを引き当てる', 1, c => c.sec, true],
   ['x2', 'ひみつ', '🗝️', 'ひみつを知る者', 'シークレットを3種類すべてそろえる', 3, c => c.sec, true],
   ['x3', 'ひみつ', '💮', 'パーフェクト', 'すべてのラウンドで30点満点をとる', 1, c => c.st.perf || 0, true],
@@ -3087,7 +3089,7 @@ async function titlesCtx() {
     const items = gItems().filter(it => g.own.includes(it.id));
     own = items.length; lr = items.filter(it => it.rar === 'lr' || it.rar === 'sec').length; sec = items.filter(it => it.rar === 'sec').length;
   }
-  const sgv = Object.values(stageStars());
+  const sgv = Object.entries(stageStars()).filter(([k]) => Number(k) < SG_ALL).map(([, v]) => v);
   return { st, album, albumAll, friends: (NET.friends || []).length, own, lr, sec, sgClear: sgv.filter(v => v >= 1).length, sgStars: sgv.reduce((a, b) => a + (b || 0), 0), lv: rankOf(myXp()).lv };
 }
 let titlesBusy = 0;
@@ -3168,7 +3170,8 @@ async function showTitles() {
 }
 
 /* ---------- ステージ(マップ) ---------- */
-const STAGES = window.DB_STAGES || [];
+const STAGES_ALL = window.DB_STAGES || [];
+const STAGES = (() => { const t = new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); return STAGES_ALL.filter(st => !st.rel || st.rel <= t); })();
 const SGKEY = 'dbStages';
 const stageStars = () => lsGet(SGKEY, {});
 const stageOpen = i => i === 0 || (stageStars()[i - 1] || 0) >= 1;
@@ -3228,7 +3231,7 @@ function stageSheet(i) {
 }
 function showStages() {
   const el = $('#scr-stage'), m = stageStars(), n = STAGES.length;
-  const GAP = 104, X = [50, 28, 50, 72], H = n * GAP + 70;
+  const GAP = 104, X = [50, 28, 50, 72], H = n * GAP + 90;
   const px = i => X[i % 4], py = i => 56 + i * GAP;
   let d = '';
   for (let i = 0; i < n; i++) d += i === 0 ? `M ${px(0)} ${py(0)}` : ` C ${px(i - 1)} ${py(i - 1) + GAP / 2}, ${px(i)} ${py(i) - GAP / 2}, ${px(i)} ${py(i)}`;
@@ -3247,24 +3250,28 @@ function showStages() {
       open ? h('small', { class: 'ss' }, starStr(stars)) : null,
       st.rule && open ? h('i', { class: 'sr', 'aria-hidden': 'true' }, '縛') : null);
   });
+  const labels = STAGES.map((st, i) => st.th ? h('div', { class: 'stg-th', style: `top:${py(i) - 52}px` }, st.th) : null).filter(Boolean);
+  if (STAGES_ALL.length > STAGES.length) labels.push(h('div', { class: 'stg-th', style: `top:${py(n - 1) + 62}px` }, '🎁 つぎのテーマは もうすぐ！'));
   fill(el,
     h('div', { class: 'row-between' }, h('button', { class: 'btn small', type: 'button', onclick: () => { renderTitle(); go('title'); } }, '← もどる'), h('h2', { style: 'font-size:22px' }, '🗺 ステージ'), h('span', { style: 'width:74px' })),
     h('div', { class: 'card', style: 'display:flex;justify-content:space-between;align-items:center' },
       h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:17px' }, `★ ${stageTotal()} / ${n * 3}`),
       h('small', { style: 'font-weight:800' }, `クリア ${Object.values(m).filter(x => x >= 1).length} / ${n}`)),
     sgBox(),
-    h('div', { class: 'stg-map', style: `height:${H}px` }, svg, nodes));
+    h('div', { class: 'stg-map', style: `height:${H}px` }, svg, labels, nodes));
   go('stage');
   const cur = STAGES.findIndex((s, i) => stageOpen(i) && !(m[i] >= 1));
   const idx = cur < 0 ? n - 1 : cur;
   setTimeout(() => { el.scrollTop = Math.max(0, py(idx) - 240); }, 50);
 }
 // --- ステージのごほうび(星を初めて取ったときに1回だけ。量はルールの表と同じ) ---
-const SG_N = 20; // ごほうびの表があるステージ数(増やすときは、ルールの表も足す)
+const SG_N = 50; // ごほうびの表があるステージ数(ルールの表も50まで入れてある)
+const SG_ALL = 20; // 「ステージ制覇」や称号の対象にする、最初のステージ数
 const SG_MS = { 4: [1, 1, 'stgm5'], 9: [1, 1, 'stgm10'], 14: [2, 1, 'stgm15'], 19: [3, 1, 'stgm20'] };
 function sgRew(key) {
   if (key === 'all') return [3, 50, 300, 'stgall'];
   const [i, s] = key.split('_').map(Number), ms = SG_MS[i];
+  if (i >= SG_ALL) { const fin = STAGES[i] && STAGES[i].stamp; return [s === 3 && i % 5 === 4 ? 1 : 0, s === 2 ? 2 : s === 3 ? 3 : 0, s === 1 ? 40 : s === 2 ? 25 : 30, s === 1 && fin ? fin : null]; }
   return [ms ? (s === 1 ? ms[0] : s === 3 ? ms[1] : 0) : 0, s === 1 ? 0 : s === 2 ? 3 + Math.floor(i / 4) : 5 + Math.floor(i / 2), s === 1 ? 20 + 2 * i : s === 2 ? 15 + i : 20 + i, ms && s === 1 ? ms[2] : null];
 }
 const sgDone = k => gState().sg.includes(k);
@@ -3275,7 +3282,7 @@ function sgPending(onlyStage) {
     if (onlyStage != null && onlyStage !== i) continue;
     for (let s = 1; s <= (m[i] || 0); s++) { const k = `${i}_${s}`; if (!sgDone(k)) out.push(k); }
   }
-  if (onlyStage == null && STAGES.length >= SG_N && Array.from({ length: SG_N }, (_, i) => m[i] || 0).every(x => x >= 3) && !sgDone('all')) out.push('all');
+  if (onlyStage == null && STAGES.length >= SG_ALL && Array.from({ length: SG_ALL }, (_, i) => m[i] || 0).every(x => x >= 3) && !sgDone('all')) out.push('all');
   return out;
 }
 const sgText = rw => [rw[0] ? `🎟${rw[0]}` : '', rw[1] ? `💎${rw[1]}` : '', rw[2] ? `XP${rw[2]}` : '', rw[3] ? `${STAMP_BY[rw[3]][1]}${STAMP_BY[rw[3]][2]}スタンプ` : ''].filter(Boolean).join('　');
