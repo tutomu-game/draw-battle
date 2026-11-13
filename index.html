@@ -862,7 +862,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} v:31` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} v:32` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -3556,7 +3556,7 @@ const gState = () => ({ ...GDEF(), ...(NET.gacha || {}) });
 const gOwned = id => gState().own.includes(id);
 function gSave(next) {
   NET.gacha = next; NET.gachaExists = true;
-  if (NET.state === 'ready') pushing = pushing.then(() => NET.db.doc('gacha/' + NET.me).set(next)).catch(() => {});
+  if (NET.state === 'ready') pushing = pushing.then(() => NET.db.doc('gacha/' + NET.me).set(next)).then(() => { TM.gerr = ''; }).catch(e => { TM.gerr = (e && (e.code || e.message)) || 'x'; try { showToast('保存できませんでした。通信をたしかめて、もう一度ためしてね'); } catch (_) {} });
   gUpdateBadge();
   return pushing;
 }
