@@ -625,9 +625,10 @@ const SND = (() => {
   const ICON_OFF = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="#1B1B2F" stroke="#1B1B2F" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9l5 6M21 9l-5 6" fill="none"/></svg>';
   function syncBtns() {
     document.querySelectorAll('.snd').forEach(b => {
-      b.innerHTML = st.mute ? ICON_OFF : ICON_ON;
-      b.setAttribute('aria-pressed', String(st.mute));
-      b.setAttribute('aria-label', st.mute ? '音を出す' : '音を消す');
+      const off = st.mute || (!st.bgm && !st.sfx); // BGMも効果音も「なし」のときも、消音のアイコンにする
+      b.innerHTML = off ? ICON_OFF : ICON_ON;
+      b.setAttribute('aria-pressed', String(off));
+      b.setAttribute('aria-label', off ? '音を出す' : '音を消す');
     });
   }
   function apply() {
@@ -743,8 +744,12 @@ const SND = (() => {
     refresh();
   }
   function setTempo(x) { tempo = x; }
-  function set(key, val) { st[key] = val; save(); apply(); refresh(); }
-  function toggleMute() { st.mute = !st.mute; save(); apply(); refresh(); syncBtns(); if (!st.mute) sfx('tap'); }
+  function set(key, val) { st[key] = val; save(); apply(); refresh(); syncBtns(); }
+  function toggleMute() {
+    if (!st.mute && !st.bgm && !st.sfx) { st.bgm = true; st.sfx = true; } // 両方「なし」のとき押すと、両方「あり」にもどす
+    else st.mute = !st.mute;
+    save(); apply(); refresh(); syncBtns(); if (!st.mute) sfx('tap');
+  }
 
   document.addEventListener('pointerdown', unlock, true);
   document.addEventListener('visibilitychange', () => {
@@ -873,7 +878,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:36` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:37` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
