@@ -883,7 +883,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:38` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:39` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -1172,30 +1172,26 @@ function starPath(c, x, y, r) {
 const FUDE_CACHE = new WeakMap();
 function fudeRender(s) {
   const P = s.points, S = s.size, n = P.length, rnd = mulberry((s.seed || 1) ^ 0x2f6b);
-  if (n < 2) return { n, c: null };
+  if (n < 2) return { n, d: !!s.done, c: null };
   // 点を少しなめらかに
   const q = P.map((pt, i) => i === 0 || i === n - 1 ? { x: pt.x, y: pt.y } : { x: (P[i - 1].x + 2 * pt.x + P[i + 1].x) / 4, y: (P[i - 1].y + 2 * pt.y + P[i + 1].y) / 4 });
   // 速さ(キャンバスのpx/ms)。時刻がなければ16msごととみなす
   const sp = q.map((pt, i) => { if (!i) return 0; const dt = Math.max(4, Math.min(80, ((P[i].t || 0) - (P[i - 1].t || 0)) || 16)); return Math.hypot(pt.x - q[i - 1].x, pt.y - q[i - 1].y) / dt; });
   sp[0] = sp[1];
-  for (let pass = 0; pass < 2; pass++) { for (let i = 1; i < n; i++) sp[i] = sp[i - 1] * 0.55 + sp[i] * 0.45; for (let i = n - 2; i >= 0; i--) sp[i] = sp[i + 1] * 0.55 + sp[i] * 0.45; }
+  for (let pass = 0; pass < 2; pass++) for (let i = 1; i < n; i++) sp[i] = sp[i - 1] * 0.6 + sp[i] * 0.4; // 前からだけなめらかに(書いている途中で、過去の太さが変わらない)
   const VREF = 0.6, f = sp.map(v => v / VREF); // f>1 = はやい
   const len = [0]; for (let i = 1; i < n; i++) len[i] = len[i - 1] + Math.hypot(q[i].x - q[i - 1].x, q[i].y - q[i - 1].y);
   const total = len[n - 1] || 1;
-  const endF = (f[n - 1] + f[n - 2] + f[Math.max(0, n - 3)]) / 3;
-  const flick = endF > 1.6 && total > S * 3; // はやく抜けた=はらい / ゆっくり=止め
-  const tailL = flick ? Math.min(total * 0.4, S * 9) : S * 0.9;
   const w = q.map((pt, i) => {
-    let k = 0.25 + 1.95 / (1 + Math.pow(f[i], 1.25));
-    const fromS = len[i], fromE = total - len[i];
-    const hu = Math.min(1, fromS / (S * 1.6)), head = 0.55 + 0.45 * hu + 0.22 * Math.sin(Math.PI * Math.min(1, hu * 1.1)) * (hu < 1 ? 1 : 0); // 入り(はじめに筆をおさえて太く)
-    const mid = 1 - 0.2 * Math.sin(Math.PI * fromS / total) + 0.05 * Math.sin(fromS / (S * 2.2) + (s.seed % 7)); // 中ほどは少し細く、手書きのゆらぎ
-    const press = flick ? 1 : 1 + 0.14 * Math.exp(-fromE / (S * 1.2)); // 止めは筆をおさえて少しふくらむ
-    let tail = 1;
-    if (fromE < tailL) { const u = 1 - fromE / tailL; tail = flick ? Math.max(0.03, Math.pow(1 - u, 1.35)) : 1 - 0.18 * u; }
-    return S * k * head * mid * press * tail;
+    let k = 0.25 + 1.95 / (1 + Math.pow(f[i], 1.25)); // ゆっくり=太い、はやい=細い(はらいは、はやく抜けると自然に細くなる)
+    const hu = Math.min(1, len[i] / (S * 1.6)), head = 0.55 + 0.45 * hu + 0.2 * Math.sin(Math.PI * hu); // 入り(はじめに筆をおさえる)
+    const wob = 1 + 0.05 * Math.sin(len[i] / (S * 2.2) + (s.seed % 7)); // 手書きのゆらぎ
+    return S * k * head * wob;
   });
-  for (let i = 1; i < n - 1; i++) w[i] = (w[i - 1] + 2 * w[i] + w[i + 1]) / 4;
+  for (let i = 1; i < n; i++) w[i] = w[i - 1] * 0.45 + w[i] * 0.55; // 前からだけなめらかに
+  // 筆をはなした所(書き終わり)だけ、はやく抜けていたら少し細くする
+  const endF = (f[n - 1] + f[Math.max(0, n - 2)]) / 2, flick = !!s.done && endF > 1.2;
+  if (flick) { const tl = Math.min(total * 0.5, S * 3), st = Math.min(1, (endF - 1.2) / 1.5); for (let i = 0; i < n; i++) { const fe = total - len[i]; if (fe < tl) w[i] *= 1 - 0.7 * st * Math.pow(1 - fe / tl, 1.4); } }
   // 法線
   const nx = [], ny = [];
   for (let i = 0; i < n; i++) {
@@ -1213,7 +1209,7 @@ function fudeRender(s) {
   for (const pt of q) { x0 = Math.min(x0, pt.x); y0 = Math.min(y0, pt.y); x1 = Math.max(x1, pt.x); y1 = Math.max(y1, pt.y); }
   const bx = Math.max(0, Math.floor(x0 - mg)), by = Math.max(0, Math.floor(y0 - mg));
   const bw = Math.min(W, Math.ceil(x1 + mg)) - bx, bh = Math.min(H, Math.ceil(y1 + mg)) - by;
-  if (bw <= 0 || bh <= 0) return { n, c: null };
+  if (bw <= 0 || bh <= 0) return { n, d: !!s.done, c: null };
   const cv2 = document.createElement('canvas'); cv2.width = bw; cv2.height = bh;
   const g = cv2.getContext('2d'); g.translate(-bx, -by);
   const shape = (scale, alpha) => {
@@ -1224,7 +1220,7 @@ function fudeRender(s) {
     g.closePath(); g.fill();
     if (alpha > 0.5) { // 入りと止めの丸み
       g.beginPath(); g.arc(q[0].x, q[0].y, w[0] * scale / 2, 0, Math.PI * 2); g.fill();
-      if (!flick) { g.beginPath(); g.arc(q[n - 1].x, q[n - 1].y, w[n - 1] * scale / 2, 0, Math.PI * 2); g.fill(); }
+      g.beginPath(); g.arc(q[n - 1].x, q[n - 1].y, w[n - 1] * scale / 2, 0, Math.PI * 2); g.fill();
     }
   };
   shape(1.1, 0.1); // にじみ
@@ -1244,7 +1240,7 @@ function fudeRender(s) {
       g.beginPath(); g.moveTo(q[i - 1].x + nx[i - 1] * h0, q[i - 1].y + ny[i - 1] * h0); g.lineTo(q[i].x + nx[i] * h1, q[i].y + ny[i] * h1); g.stroke();
     }
   }
-  return { n, c: cv2, bx, by };
+  return { n, d: !!s.done, c: cv2, bx, by };
 }
 const PEN_FN = {
   rainbow(c, s) {
@@ -1278,7 +1274,7 @@ const PEN_FN = {
     c.fillStyle = s.color;
     if (n0 < 3) { c.beginPath(); c.arc(P[0].x, P[0].y, S * 0.7, 0, Math.PI * 2); c.fill(); if (n0 === 1) return; }
     let hit = FUDE_CACHE.get(s);
-    if (!hit || hit.n !== n0) { hit = fudeRender(s); FUDE_CACHE.set(s, hit); }
+    if (!hit || hit.n !== n0 || hit.d !== !!s.done) { hit = fudeRender(s); FUDE_CACHE.set(s, hit); }
     if (hit.c) c.drawImage(hit.c, hit.bx, hit.by);
   },
   neon(c, s) {
@@ -1363,7 +1359,7 @@ cv.addEventListener('pointermove', e => {
   for (const ev of (evs.length ? evs : [e])) D.cur.points.push(toPt(ev));
   if (!D.blind) redraw();
 });
-const endStroke = e => { if (D.cur && e.pointerId === D.ptr) { D.cur = null; D.ptr = null; if (D.one) finishDraw('done'); } };
+const endStroke = e => { if (D.cur && e.pointerId === D.ptr) { D.cur.done = true; if (!D.blind && D.cur.pen === 'fude') redraw(); D.cur = null; D.ptr = null; if (D.one) finishDraw('done'); } };
 cv.addEventListener('pointerup', endStroke);
 cv.addEventListener('pointercancel', endStroke);
 
