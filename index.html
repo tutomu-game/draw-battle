@@ -480,6 +480,7 @@ body.fx-shake{animation:fxShake .45s linear 3}
 <script src="events.js"></script>
 <script src="topics.js"></script>
 <script src="stages.js"></script>
+<script src="news.js"></script>
 <script src="fb-shim.js"></script>
 <script>
 (() => {
@@ -869,7 +870,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} v:34` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} v:35` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -891,17 +892,18 @@ function refreshHud() { const el = $('#hud'); if (el) swapKids(el, hudKids().fil
 function renderHome() {
   const dyn = $('#title-dyn');
   updateTabbar(); updateOnlineBadge();
-  setTimeout(titlesBadge, 0); setTimeout(gUpdateBadge, 0); setTimeout(misBadge, 0); setTimeout(titlesCheck, 1500);
+  newsAuto(); setTimeout(titlesBadge, 0); setTimeout(gUpdateBadge, 0); setTimeout(misBadge, 0); setTimeout(titlesCheck, 1500);
   const modeBtn = (id, t, desc, col, ic) => h('button', { class: 'card mbig', type: 'button', style: `background:${col}`, onclick: () => { SND.sfx('tap'); S.mode = id; showSetup(); } },
     h('span', { class: 'mic', 'aria-hidden': 'true' }, ic), h('span', {}, h('b', {}, t), h('small', {}, desc)));
-  const histBtn = h('div', { class: 'row2', style: 'justify-content:center;gap:8px' },
+  const histBtn = h('div', { class: 'row2', style: 'justify-content:center;gap:8px;flex-wrap:wrap' },
     h('button', { class: 'btn small', type: 'button', onclick: () => showGuide() }, '❓ あそびかた'),
     h('button', { class: 'btn small', type: 'button', onclick: () => showAlbum() }, '🖼 さくひん帳'),
     h('button', { id: 'tt-btn', class: 'btn small', type: 'button', style: 'position:relative', onclick: () => showTitles() }, '🏅 しょうごう', h('span', { class: 'badge', id: 'tt-badge', hidden: true, 'aria-label': '受け取れるごほうび', style: 'position:absolute;top:-9px;right:-9px;margin:0' })),
-    h('button', { class: 'btn small', type: 'button', onclick: showHistory }, '📜 せんれき'));
+    h('button', { class: 'btn small', type: 'button', onclick: showHistory }, '📜 せんれき'),
+    h('button', { class: 'btn small', type: 'button', style: 'position:relative', onclick: () => showNews() }, '📢 おしらせ'));
   const legal = h('p', { style: 'text-align:center;font-size:12px;font-weight:800;opacity:.8' },
     h('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, '利用規約'), ' ・ ', h('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, 'プライバシーポリシー'));
-  fill(dyn, h('div', { id: 'hud', class: 'hud' }, ...hudKids().filter(Boolean)), rankCard(), h('div', { id: 'tt-slot' }, ttBanner()), h('div', { id: 'ev-slot' }, eventBanner()), dailyBtn(),
+  fill(dyn, h('div', { id: 'hud', class: 'hud' }, ...hudKids().filter(Boolean)), rankCard(), h('div', { id: 'news-slot' }, newsBanner()), h('div', { id: 'tt-slot' }, ttBanner()), h('div', { id: 'ev-slot' }, eventBanner()), dailyBtn(),
     h('div', { style: 'font-weight:900;font-size:14px;padding-left:4px;margin-top:2px' }, 'あそぶ'),
     stageHomeCard(),
     modeBtn('battle', '対戦', '2〜4人で順番に描いて、AIが採点', 'var(--pink)', '👥'),
@@ -2207,6 +2209,45 @@ function showGuide() {
         h('button', { class: 'btn primary', type: 'button', onclick: () => { if (last) close(); else { i++; draw(); SND.sfx('tap'); } } }, last ? 'はじめる！' : 'つぎへ'))));
   };
   draw(); document.body.append(m);
+}
+
+/* ---------- おしらせ(アップデート情報) ---------- */
+const NEWS = window.DB_NEWS || [];
+let newsPopped = false;
+function newsUnseen() { const k = NEWS.findIndex(n => n.id === lsGet('dbNews', '')); return k < 0 ? NEWS.slice() : NEWS.slice(0, k); }
+function newsMarkSeen() { if (NEWS.length) lsSet('dbNews', NEWS[0].id); newsRefresh(); }
+function newsRefresh() { const sl = $('#news-slot'); if (sl) swapKids(sl, [newsBanner()].filter(Boolean)); const b = $('#news-badge'); if (b) { const n = newsUnseen().length; b.textContent = String(n); b.hidden = !n; } }
+function newsBanner() {
+  const u = newsUnseen(); if (!u.length) return null;
+  return h('button', { class: 'card', type: 'button', style: 'width:100%;background:#C9F0FF;display:flex;align-items:center;gap:10px;text-align:left;margin-bottom:8px', onclick: () => { SND.sfx('tap'); showNews(); } },
+    h('span', { style: 'font-size:34px', 'aria-hidden': 'true' }, '📢'),
+    h('span', { style: 'flex:1;color:var(--ink);line-height:1.3' }, h('b', { style: 'font-size:18px;display:block' }, 'あたらしいおしらせ！'), h('span', { style: 'font-size:15px;font-weight:800' }, u[0].emoji + ' ' + u[0].title)),
+    h('span', { class: 'badge', style: 'margin:0' }, String(u.length)));
+}
+function showNews() {
+  const old = $('#news-modal'); if (old) old.remove();
+  const u = newsUnseen(), unseen = new Set(u.map(n => n.id));
+  const items = u.length ? u : NEWS.slice(0, 5);
+  const soon = Object.entries(COURSES_ALL).filter(([cid, c]) => c.rel && c.rel > STG_TODAY).sort((a, b) => a[1].rel.localeCompare(b[1].rel));
+  const close = () => { m.remove(); SND.sfx('tap'); newsMarkSeen(); };
+  const m = h('div', { id: 'news-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'おしらせ', style: 'position:fixed;inset:0;z-index:70;background:rgba(27,27,47,.72);display:flex;padding:14px;overflow:auto' },
+    h('div', { class: 'card stack', style: 'max-width:380px;width:100%;background:#fff;margin:auto' },
+      h('b', { style: 'font-family:var(--f-display);font-weight:400;font-size:22px;text-align:center' }, '📢 おしらせ'),
+      ...items.map(n => h('div', { class: 'stack', style: 'gap:6px;padding:10px;border-radius:12px;background:#F4F8FF;border:2px solid var(--ink)' },
+        h('div', { style: 'display:flex;align-items:center;gap:8px;flex-wrap:wrap' }, h('span', { style: 'font-size:26px', 'aria-hidden': 'true' }, n.emoji), h('b', { style: 'font-size:17px;flex:1' }, n.title),
+          unseen.has(n.id) ? h('span', { class: 'badge', style: 'margin:0;width:auto;padding:0 8px' }, 'NEW') : null, n.date ? h('small', { style: 'font-weight:800;opacity:.7' }, n.date) : null),
+        h('ul', { style: 'margin:0;padding-left:18px;font-size:14px;font-weight:700;line-height:1.55' }, n.lines.map(l => { const li = h('li'); li.innerHTML = l; return li; })))),
+      soon.length ? h('p', { class: 'gline', style: 'text-align:center' }, '🎁 もうすぐ：' + soon.map(([cid, c]) => `${c.emoji}${c.name}（${Number(c.rel.slice(5, 7))}/${Number(c.rel.slice(8, 10))}）`).join('、')) : null,
+      h('button', { class: 'btn primary big', type: 'button', onclick: close }, 'とじる')));
+  document.body.append(m);
+}
+// 起動したとき、まだ見ていないおしらせがあれば1回だけ出す(はじめての人は、あそびかたを先に見るので出さない)
+function newsAuto() {
+  if (newsPopped || !NEWS.length) return;
+  if (!lsGet('dbIntro', 0)) { newsMarkSeen(); return; }
+  if (!newsUnseen().length) return;
+  newsPopped = true;
+  setTimeout(() => { if ($('#scr-title').classList.contains('active') && !$('#intro-modal') && !$('#news-modal')) showNews(); }, 900);
 }
 function saveProfile(name, shape) {
   const firstTime = !PROFILE;
@@ -4028,7 +4069,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
 
-if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { S, buildPrompt: x => buildPrompt(x), courseLocked, courseIds, courseIdx, stageNo, showCourse, showGuide, previewFx, STAMP_BY, G_RATE, swapItem, titlesBadge, sgClaim, sgPending, sgRew, startStage, showStages, stageStars, STAGES, titleClaim, T_REW, titlesCheck, titlesCtx, TITLES, statsLoad, showTitles, ALB, albumCollect, showAlbum, challengeTopic, myXp: () => myXp(), lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
+if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { newsUnseen, showNews, S, buildPrompt: x => buildPrompt(x), courseLocked, courseIds, courseIdx, stageNo, showCourse, showGuide, previewFx, STAMP_BY, G_RATE, swapItem, titlesBadge, sgClaim, sgPending, sgRew, startStage, showStages, stageStars, STAGES, titleClaim, T_REW, titlesCheck, titlesCtx, TITLES, statsLoad, showTitles, ALB, albumCollect, showAlbum, challengeTopic, myXp: () => myXp(), lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
 
 function boot(saved) {
   if (saved && typeof saved === 'object') {
