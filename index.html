@@ -637,6 +637,8 @@ const SND = (() => {
     bgmG.gain.value = st.bgm ? 0.2 : 0;
   }
   function unlock() {
+    // iPhoneの消音スイッチ(マナーモード)でも鳴らす
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) {}
     if (!ac) {
       const C = window.AudioContext || window.webkitAudioContext;
       if (!C) return false;
@@ -756,7 +758,8 @@ const SND = (() => {
   });
   document.querySelectorAll('.snd').forEach(b => b.addEventListener('click', toggleMute));
   syncBtns();
-  return { st, unlock, sfx, bgm, setTempo, drumroll, set };
+  const info = () => `${ac ? ac.state : 'none'} m${st.mute ? 1 : 0} b${st.bgm ? 1 : 0} s${st.sfx ? 1 : 0}${navigator.audioSession ? ' as:' + navigator.audioSession.type : ''}`;
+  return { st, unlock, sfx, bgm, setTempo, drumroll, set, info };
 })();
 
 /* ---------- state ---------- */
@@ -870,7 +873,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} v:35` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:36` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
