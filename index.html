@@ -884,7 +884,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:40` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:41` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -2309,7 +2309,7 @@ function showGuide() {
 /* ---------- おしらせ(アップデート情報) ---------- */
 const NEWS = window.DB_NEWS || [];
 let newsPopped = false;
-function newsUnseen() { const k = NEWS.findIndex(n => n.id === lsGet('dbNews', '')); return k < 0 ? NEWS.slice() : NEWS.slice(0, k); }
+function newsUnseen() { let id = lsGet('dbNews', ''); id = (window.DB_NEWS_ALIAS || {})[id] || id; const k = NEWS.findIndex(n => n.id === id); return k < 0 ? NEWS.slice() : NEWS.slice(0, k); }
 function newsMarkSeen() { if (NEWS.length) lsSet('dbNews', NEWS[0].id); newsRefresh(); }
 function newsRefresh() { const sl = $('#news-slot'); if (sl) swapKids(sl, [newsBanner()].filter(Boolean)); const b = $('#news-badge'); if (b) { const n = newsUnseen().length; b.textContent = String(n); b.hidden = !n; } }
 function newsBanner() {
