@@ -52,13 +52,14 @@ export default {
       if (!m) return json({ error: 'bad_request' }, 400, hdr);
       parts.push({ inline_data: { mime_type: m[1], data: m[2] } });
     }
+    const temp = Number.isFinite(Number(body.temperature)) && body.temperature !== null ? Math.min(1, Math.max(0, Number(body.temperature))) : 0.9;
     const model = env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
       body: JSON.stringify({
         contents: [{ role: 'user', parts }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 4096, responseMimeType: 'application/json' }
+        generationConfig: { temperature: temp, maxOutputTokens: 4096, responseMimeType: 'application/json' }
       })
     });
     // 無料枠切れ・上限は 429 (RESOURCE_EXHAUSTED) で返る
