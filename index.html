@@ -862,7 +862,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} v:32` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} v:33` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -1124,7 +1124,7 @@ function fitCanvas() {
 window.addEventListener('resize', () => { if ($('#scr-draw').classList.contains('active')) fitCanvas(); });
 
 /* ---------- ペンの種類 ---------- */
-const PENS = [['normal', '✏️', 'ふつう', 'n'], ['marker', '🖊️', 'マーカー', 'r'], ['crayon', '🖍️', 'クレヨン', 'r'], ['rainbow', '🌈', 'レインボー', 'sr'], ['sparkle', '✨', 'キラキラ', 'sr'], ['neon', '💡', 'ネオン', 'hr']];
+const PENS = [['normal', '✏️', 'ふつう', 'n'], ['marker', '🖊️', 'マーカー', 'r'], ['crayon', '🖍️', 'クレヨン', 'r'], ['rainbow', '🌈', 'レインボー', 'sr'], ['sparkle', '✨', 'キラキラ', 'sr'], ['fude', '🖌️', '筆', 'sr'], ['neon', '💡', 'ネオン', 'hr']];
 const penOwned = id => id === 'normal' || gOwned('p_' + id);
 // 色の縛りがあるルールでは、色が増えるペンは使えない
 const penAllowed = id => !(D.rule && ['mono', 'tri'].includes(D.rule.id) && ['rainbow', 'sparkle'].includes(id));
@@ -1162,6 +1162,25 @@ const PEN_FN = {
         const a = r() * Math.PI * 2, dist = s.size * (0.5 + r() * 1.3), sz = 7 + r() * 9, col = cols[Math.floor(r() * cols.length)];
         c.fillStyle = col; starPath(c, p[i].x + Math.cos(a) * dist, p[i].y + Math.sin(a) * dist, sz); c.fill();
       }
+    }
+  },
+  fude(c, s) {
+    // 習字の筆: ゆっくり=太く、はやい=細く。はじめは入り、おわりは払いで細くなる
+    const p = s.points, S = s.size;
+    c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = s.color; c.fillStyle = s.color;
+    if (p.length < 3) { c.beginPath(); c.arc(p[0].x, p[0].y, S * 0.75, 0, Math.PI * 2); c.fill(); if (p.length === 1) return; }
+    const n = p.length, w = new Array(n);
+    let v = 0;
+    for (let i = 0; i < n; i++) {
+      const d = i ? Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y) : 0;
+      v = i ? v * 0.8 + d * 0.2 : 0;
+      let k = 0.3 + 1.2 / (1 + v / 7);
+      const head = Math.min(1, 0.55 + i / 6), tail = Math.min(1, 0.22 + (n - 1 - i) / 9);
+      w[i] = S * k * head * tail;
+    }
+    for (let i = 1; i < n; i++) {
+      c.lineWidth = (w[i - 1] + w[i]) / 2;
+      c.beginPath(); c.moveTo(p[i - 1].x, p[i - 1].y); c.lineTo(p[i].x, p[i].y); c.stroke();
     }
   },
   neon(c, s) {
