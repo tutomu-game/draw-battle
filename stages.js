@@ -102,6 +102,27 @@ window.DB_STAGES = [
   { topic: '時間旅行のタクシー', rule: 'thick', t: [18, 23, 27], c: 'ride' },
   { topic: '変形する乗りもの', rule: null, t: [17, 22, 26], c: 'ride' },
   { topic: '空飛ぶ未来のまち', rule: 'one', t: [18, 23, 27], c: 'ride', stamp: 'thv' },
+  // ---- 習字の道(筆ペンを持っている人だけ) ----
+  { topic: '一', rule: null, t: [10, 15, 19], c: 'shuji' },
+  { topic: '十', rule: null, t: [10, 15, 19], c: 'shuji' },
+  { topic: '山', rule: null, t: [11, 16, 20], c: 'shuji' },
+  { topic: '川', rule: null, t: [11, 16, 20], c: 'shuji' },
+  { topic: '木', rule: null, t: [11, 16, 20], c: 'shuji' },
+  { topic: '花', rule: null, t: [12, 17, 21], c: 'shuji' },
+  { topic: '空', rule: null, t: [12, 17, 21], c: 'shuji' },
+  { topic: '光', rule: null, t: [12, 17, 21], c: 'shuji' },
+  { topic: '永', rule: null, t: [13, 18, 22], c: 'shuji' },
+  { topic: '夢', rule: null, t: [13, 18, 22], c: 'shuji' },
+  { topic: '友情', rule: null, t: [12, 17, 21], c: 'shuji' },
+  { topic: '元気', rule: null, t: [12, 17, 21], c: 'shuji' },
+  { topic: '感謝', rule: null, t: [13, 18, 22], c: 'shuji' },
+  { topic: '勇気', rule: null, t: [13, 18, 22], c: 'shuji' },
+  { topic: '希望', rule: null, t: [13, 18, 22], c: 'shuji' },
+  { topic: '努力', rule: null, t: [14, 19, 23], c: 'shuji' },
+  { topic: '平和', rule: null, t: [14, 19, 23], c: 'shuji' },
+  { topic: '一期一会', rule: null, t: [14, 19, 24], c: 'shuji' },
+  { topic: '風林火山', rule: null, t: [14, 20, 24], c: 'shuji' },
+  { topic: '日々精進', rule: null, t: [15, 20, 25], c: 'shuji', stamp: 'ths' },
 ];
 // コース(テーマ)の設定。rel=この日から公開(日本時間)
 window.DB_COURSES = {
@@ -109,5 +130,6 @@ window.DB_COURSES = {
   winter: { name: '冬の旅', emoji: '❄️', rel: null },
   zoo: { name: 'どうぶつ園', emoji: '🦁', rel: '2026-11-27' },
   food: { name: 'おいしい世界', emoji: '🍰', rel: '2026-12-11' },
-  ride: { name: '乗りもの大集合', emoji: '🚀', rel: '2026-12-25' }
+  ride: { name: '乗りもの大集合', emoji: '🚀', rel: '2026-12-25' },
+  shuji: { name: '習字の道', emoji: '🖌️', rel: null }
 };
