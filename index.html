@@ -77,6 +77,40 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 .shuji-paper.many{padding:14px 10px;background-image:linear-gradient(to right,transparent calc(50% - .5px),rgba(224,57,31,.35) calc(50% - .5px),rgba(224,57,31,.35) calc(50% + .5px),transparent calc(50% + .5px))}
 .shuji-paper .ch{position:relative;line-height:1.08;text-shadow:.5px 0 0 #161616,-.5px 0 0 #161616,0 .6px 0 #161616}
 #shuji-guide{position:absolute;pointer-events:none;z-index:1;mix-blend-mode:multiply;outline:2px solid rgba(224,57,31,.45);outline-offset:-1px;background:linear-gradient(to right,transparent calc(50% - 1px),rgba(224,57,31,.32) calc(50% - 1px),rgba(224,57,31,.32) calc(50% + 1px),transparent calc(50% + 1px)),linear-gradient(to bottom,transparent calc(50% - 1px),rgba(224,57,31,.32) calc(50% - 1px),rgba(224,57,31,.32) calc(50% + 1px),transparent calc(50% + 1px)),linear-gradient(to top right,transparent calc(50% - .6px),rgba(224,57,31,.16) calc(50% - .6px),rgba(224,57,31,.16) calc(50% + .6px),transparent calc(50% + .6px)),linear-gradient(to bottom right,transparent calc(50% - .6px),rgba(224,57,31,.16) calc(50% - .6px),rgba(224,57,31,.16) calc(50% + .6px),transparent calc(50% + .6px))}
+/* ---- 背景(紙): 画面の表示だけ。AIに渡す画像は、いつも白い紙 ---- */
+.paper{position:absolute;overflow:hidden;border-radius:12px;background:#fff;pointer-events:none;z-index:0}
+.paper::before,.paper::after{content:'';position:absolute;inset:0;pointer-events:none}
+.bg-hanshi{background:#FBF6E6;background-image:radial-gradient(rgba(150,120,70,.10) 1px,transparent 1.5px);background-size:9px 9px}
+.bg-grid{background-color:#F4FFF4;background-image:linear-gradient(rgba(60,160,90,.28) 1px,transparent 1px),linear-gradient(90deg,rgba(60,160,90,.28) 1px,transparent 1px);background-size:26px 26px}
+.bg-line{background-color:#FFFEF3;background-image:linear-gradient(90deg,transparent 46px,rgba(230,80,80,.45) 46px 48px,transparent 48px),repeating-linear-gradient(to bottom,transparent 0 33px,rgba(70,130,230,.38) 33px 35px);background-size:100% 100%,100% 35px}
+.bg-kraft{background-color:#F2E2C2;background-image:radial-gradient(rgba(120,85,45,.16) 1px,transparent 1.6px),radial-gradient(rgba(255,255,255,.35) 1px,transparent 1.6px);background-size:7px 7px,11px 11px;background-position:0 0,3px 5px}
+.bg-dot{background-color:#FFF8EA;background-image:radial-gradient(#FFB6CB 3.5px,transparent 4px),radial-gradient(#B7DCFF 3.5px,transparent 4px);background-size:30px 30px;background-position:0 0,15px 15px}
+.bg-sunset{background:linear-gradient(180deg,#FFE9B8 0%,#FFD0BF 45%,#FFC3D8 75%,#E3C8F5 100%)}
+.bg-mint{background:radial-gradient(circle at 20% 15%,rgba(255,255,255,.8) 0 8%,transparent 9%),radial-gradient(circle at 80% 70%,rgba(255,255,255,.7) 0 10%,transparent 11%),linear-gradient(160deg,#DDFFEF,#C7F1FF)}
+.bg-sakura{background-color:#FFF3F7;background-image:radial-gradient(circle at 20% 25%,rgba(255,150,185,.5) 6px,transparent 7px),radial-gradient(circle at 62% 62%,rgba(255,170,200,.5) 5px,transparent 6px),radial-gradient(circle at 85% 20%,rgba(255,150,185,.4) 4px,transparent 5px),radial-gradient(circle at 35% 85%,rgba(255,190,210,.55) 5px,transparent 6px);background-size:130px 130px}
+.bg-seigaiha{background-color:#E9F5FF;background-image:radial-gradient(circle at 50% 100%,transparent 0 22%,rgba(70,140,215,.45) 22% 26%,transparent 26% 40%,rgba(70,140,215,.45) 40% 44%,transparent 44% 58%,rgba(70,140,215,.45) 58% 62%,transparent 62% 76%,rgba(70,140,215,.45) 76% 80%,transparent 80%),radial-gradient(circle at 50% 100%,transparent 0 22%,rgba(70,140,215,.45) 22% 26%,transparent 26% 40%,rgba(70,140,215,.45) 40% 44%,transparent 44% 58%,rgba(70,140,215,.45) 58% 62%,transparent 62% 76%,rgba(70,140,215,.45) 76% 80%,transparent 80%);background-size:56px 28px,56px 28px;background-position:0 0,28px 14px}
+.bg-ichimatsu{background:conic-gradient(#FFF 25%,#FFD9E4 0 50%,#FFF 0 75%,#FFD9E4 0) 0 0/44px 44px}
+.bg-aurora{background:linear-gradient(120deg,#E6F8FF,#EEE4FF,#E4FFF0,#FFF0E2,#E6F8FF);background-size:320% 320%;animation:bgflow 14s ease-in-out infinite}
+.bg-aurora::before{background:radial-gradient(ellipse at 30% 20%,rgba(120,255,220,.28),transparent 55%),radial-gradient(ellipse at 75% 40%,rgba(190,140,255,.25),transparent 55%);animation:bgdrift 9s ease-in-out infinite alternate}
+.bg-kinpaku{background:linear-gradient(135deg,#FFF7D8,#FFEBA8 50%,#FFF7D8)}
+.bg-kinpaku::before{background-image:radial-gradient(rgba(255,205,60,.95) 1.5px,transparent 2.2px),radial-gradient(rgba(255,255,255,.95) 1px,transparent 1.8px),radial-gradient(rgba(230,170,30,.8) 2px,transparent 2.8px);background-size:37px 41px,23px 29px,53px 47px;background-position:0 0,11px 7px,19px 23px;animation:bgtwinkle 3.2s ease-in-out infinite}
+.bg-kinpaku::after{background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.65) 50%,transparent 60%);background-size:260% 100%;animation:bgsheen 5s linear infinite}
+.bg-hanabi{background:linear-gradient(180deg,#F1F0FF,#E8F2FF 60%,#FFF1F4)}
+.bg-hanabi::before{background:radial-gradient(circle at 28% 30%,transparent 0 9%,rgba(255,90,140,.55) 10% 13%,transparent 14% 24%,rgba(255,190,60,.5) 25% 27%,transparent 28%),radial-gradient(circle at 75% 22%,transparent 0 7%,rgba(70,150,255,.55) 8% 11%,transparent 12% 20%,rgba(150,90,255,.5) 21% 23%,transparent 24%);animation:bgburst 3.6s ease-out infinite}
+.bg-hanabi::after{background:radial-gradient(circle at 60% 68%,transparent 0 8%,rgba(60,200,120,.5) 9% 12%,transparent 13% 22%,rgba(255,120,90,.5) 23% 25%,transparent 26%),radial-gradient(circle at 20% 78%,transparent 0 6%,rgba(255,160,220,.55) 7% 10%,transparent 11%);animation:bgburst 3.6s ease-out 1.8s infinite}
+@keyframes bgflow{0%,100%{background-position:0 50%}50%{background-position:100% 50%}}
+@keyframes bgdrift{from{transform:translate(-6%,-4%)}to{transform:translate(6%,5%)}}
+@keyframes bgtwinkle{0%,100%{opacity:.35}50%{opacity:1}}
+@keyframes bgsheen{from{background-position:130% 0}to{background-position:-30% 0}}
+@keyframes bgburst{0%{transform:scale(.2);opacity:0}15%{opacity:1}100%{transform:scale(1.15);opacity:0}}
+@media (prefers-reduced-motion: reduce){.paper,.paper::before,.paper::after{animation:none!important}}
+.gc-sw{display:inline-block;position:relative;width:38px;height:38px;border-radius:9px;border:2px solid var(--ink);overflow:hidden;vertical-align:middle}
+.gc-sw .paper{inset:0;border-radius:0}
+.big .gc-sw{width:96px;height:96px;border-radius:14px;border-width:3px}
+.dress-prev{height:150px;border-radius:14px;border:3px solid var(--ink);position:relative;overflow:hidden;display:grid;place-items:center;font-family:var(--f-display)}
+.dress-prev .paper{inset:0;border-radius:0}
+.dress-prev b{position:relative;z-index:1;font-size:26px;color:#1B1B2F;text-shadow:0 1px 0 #fff}
+.gc-it.on{outline:4px solid #19B36B;outline-offset:1px}
 #blind-note{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;text-align:center;font-family:var(--f-display);font-size:22px;line-height:1.5;color:rgba(27,27,47,.3);padding:30px;z-index:1}
 .modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .mode{display:flex;flex-direction:column;align-items:center;font:inherit;color:var(--ink);background:var(--paper);border:3px solid var(--ink);border-radius:14px;padding:8px 4px;cursor:pointer;touch-action:manipulation}
@@ -195,7 +229,7 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 .bar{height:14px;border:3px solid var(--ink);border-radius:10px;background:var(--paper);overflow:hidden;flex:none}
 .bar>i{display:block;height:100%;width:100%;background:var(--green)}
 .stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
-#cv{background:#fff;border:3px solid var(--ink);border-radius:12px;box-shadow:var(--shadow);touch-action:none;display:block;cursor:crosshair}
+#cv{background:transparent;position:relative;z-index:1;border:3px solid var(--ink);border-radius:12px;box-shadow:var(--shadow);touch-action:none;display:block;cursor:crosshair}
 .tools{display:flex;flex-direction:column;gap:8px;flex:none}
 .swatches{display:flex;flex-wrap:wrap;gap:8px 6px;justify-content:center;padding:0 6px}
 .sw{flex:0 0 calc((100% - 42px) / 8);max-width:44px;aspect-ratio:1;border-radius:50%;border:3px solid var(--ink);background:var(--c);cursor:pointer;padding:0;font-family:var(--f-display);font-size:13px;color:var(--ink);touch-action:manipulation}
@@ -448,7 +482,7 @@ body.fx-shake{animation:fxShake .45s linear 3}
     <div class="topic-chip"><em>お題</em><span id="d-topic"></span></div>
     <div class="topic-chip" id="d-rule" hidden><em>縛り</em><span id="d-rule-t"></span></div>
     <div class="bar" id="timer-bar" role="presentation"><i></i></div>
-    <div class="stage" id="stage"><div id="blind-note" hidden>線は見えません。<br>感覚で描こう！</div><canvas id="cv" width="960" height="1200" aria-label="お絵描きキャンバス"></canvas><div id="shuji-guide" hidden aria-hidden="true"></div></div>
+    <div class="stage" id="stage"><div id="blind-note" hidden>線は見えません。<br>感覚で描こう！</div><div id="paper-bg" class="paper" aria-hidden="true"></div><canvas id="cv" width="960" height="1200" aria-label="お絵描きキャンバス"></canvas><div id="shuji-guide" hidden aria-hidden="true"></div></div>
     <div class="tools">
       <div class="pens" id="pens" role="group" aria-label="ペンの種類"></div>
       <div class="swatches" id="swatches"></div>
@@ -884,7 +918,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:42` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:43` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -1151,6 +1185,8 @@ function fitCanvas() {
   const sc = Math.min(w / W, hh / H);
   cv.style.width = Math.floor(W * sc) + 'px';
   cv.style.height = Math.floor(H * sc) + 'px';
+  const pb = $('#paper-bg');
+  if (pb) { pb.style.left = cv.offsetLeft + 'px'; pb.style.top = cv.offsetTop + 'px'; pb.style.width = cv.offsetWidth + 'px'; pb.style.height = cv.offsetHeight + 'px'; }
   const g = $('#shuji-guide');
   if (g) { g.style.left = cv.offsetLeft + 'px'; g.style.top = cv.offsetTop + 'px'; g.style.width = cv.offsetWidth + 'px'; g.style.height = cv.offsetHeight + 'px'; }
 }
@@ -1342,7 +1378,7 @@ function strokePath(c, s) {
   const l = p[p.length - 1]; c.lineTo(l.x, l.y); c.stroke();
 }
 function redraw() {
-  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  ctx.clearRect(0, 0, W, H); // 画面の紙は、うしろの別の層。AIに渡す画像は、書き出すときに白い紙に重ねる
   D.strokes.forEach(s => strokePath(ctx, s));
 }
 function toPt(e) {
@@ -1395,7 +1431,7 @@ function startDraw() {
   $('#d-rule').hidden = !D.rule;
   if (D.rule) $('#d-rule-t').textContent = D.rule.name + (D.rule.id === 'rush' ? `（${D.total}秒）` : '');
   $('#blind-note').hidden = !D.blind;
-  $('#shuji-guide').hidden = !c.shuji;
+  $('#shuji-guide').hidden = !c.shuji; paintPaper();
   go('draw');
   SND.bgm('draw'); SND.sfx('go');
   fitCanvas();
@@ -3757,12 +3793,30 @@ const MAX_TIX = 10;
 const RAR_ORDER = ['r', 'sr', 'hr', 'lr', 'sec'];
 const RAR_STAR = { r: '★ レア', sr: '★★ スーパーレア', hr: '★★★ ハイパーレア', lr: '★★★★ レジェンドレア', sec: '？？？ シークレット' };
 const RAR_COL = { r: '#6FB1FF', sr: '#FFC933', hr: '#C28BFF', lr: '#FF8A3D', sec: '#FFD23F' };
+/* ---------- 背景(紙) ---------- */
+// [キー, 絵文字, 名前, レア度]  見た目は CSS の .bg-<キー> 。画面の表示だけで、AIに渡す画像には入らない
+const BGS = [['grid', '📐', '方眼紙', 'r'], ['line', '📒', 'ノート', 'r'], ['kraft', '🟫', '画用紙', 'r'], ['dot', '🔵', 'みずたま', 'r'],
+  ['sunset', '🌇', '夕やけ空', 'sr'], ['mint', '🍃', 'ミントの空', 'sr'], ['sakura', '🌸', 'さくら', 'sr'],
+  ['seigaiha', '🌊', '青海波', 'hr'], ['ichimatsu', '🎏', '市松もよう', 'hr'],
+  ['aurora', '🌌', 'オーロラ', 'lr'], ['kinpaku', '🪙', '金ぱくの紙', 'lr'],
+  ['hanabi', '🎆', '花火', 'sec']];
+const BG_BY = Object.fromEntries(BGS.map(d => [d[0], d]));
+const eqGet = k => { try { return (JSON.parse(localStorage.getItem('dbEq') || '{}') || {})[k] || ''; } catch (e) { return ''; } };
+const eqSet = (k, v) => { try { const o = JSON.parse(localStorage.getItem('dbEq') || '{}') || {}; o[k] = v; localStorage.setItem('dbEq', JSON.stringify(o)); } catch (e) {} };
+const curBg = () => { const k = eqGet('bg'); return k && BG_BY[k] && gOwned('b_' + k) ? k : ''; };
+const bgSwatch = key => h('span', { class: 'gc-sw', 'aria-hidden': 'true' }, h('span', { class: 'paper bg-' + key }));
+function paintPaper() {
+  const el = $('#paper-bg'); if (!el) return;
+  const k = curBg();
+  el.className = 'paper' + (S.cur && S.cur.shuji ? ' bg-hanshi' : k ? ' bg-' + k : '');
+}
 const GDEF = () => ({ tix: 0, shards: 0, own: [], day: '', lvg: 1, gifts: [], pulls: 0, hx: 0, inv: [], mdd: 0, mwk: 0, evs: [], tt: [], sg: [] });
 let dbgKind = null, gTab = 'zukan';
 function gItems() {
   return [
     ...STAMPS.filter(d => d[3] !== 'n').map(d => ({ id: d[0], kind: 'stamp', rar: d[3], name: d[2], disp: d[1], def: d, ev: d[6] || null, give: !!d[7] })),
-    ...PENS.filter(p => p[3] !== 'n').map(p => ({ id: 'p_' + p[0], kind: 'pen', rar: p[3], name: p[2] + 'ペン', disp: p[1], ev: null }))
+    ...PENS.filter(p => p[3] !== 'n').map(p => ({ id: 'p_' + p[0], kind: 'pen', rar: p[3], name: p[2] + 'ペン', disp: p[1], ev: null })),
+    ...BGS.map(d => ({ id: 'b_' + d[0], kind: 'bg', rar: d[3], name: d[2], disp: d[1], bgKey: d[0], ev: null }))
   ].filter(it => !it.ev || gOwned(it.id) || evActive(it.ev)).sort((a, b) => RAR_ORDER.indexOf(a.rar) - RAR_ORDER.indexOf(b.rar));
 }
 const gState = () => ({ ...GDEF(), ...(NET.gacha || {}) });
@@ -4017,7 +4071,7 @@ function showMis() {
   if (!PROFILE) { showReg(false); return; }
   renderMis(); go('mis'); SND.bgm('menu');
 }
-function itemIcon(it) { return it.kind === 'stamp' ? stampLabel(it.def) : it.disp; }
+function itemIcon(it) { return it.kind === 'stamp' ? stampLabel(it.def) : it.kind === 'bg' ? bgSwatch(it.bgKey) : it.disp; }
 function showGacha() {
   if (!PROFILE) { showReg(false); return; }
   renderGacha(); go('gacha'); SND.bgm('menu');
@@ -4033,8 +4087,8 @@ function renderGacha(tab) {
   const grid = h('div', { class: 'gc-grid' }, items.map(it => {
     const o = own(it), hidden = !o && it.rar === 'sec';
     return h('button', { class: 'gc-it r-' + it.rar + (o ? '' : ' lock'), type: 'button', 'aria-label': (o ? it.name : '未入手') + '（' + RAR_STAR[it.rar] + '）',
-      onclick: () => { if (o && it.kind === 'stamp') previewFx(it.def); } },
-      h('span', { class: 'ic' }, hidden ? '？' : itemIcon(it) ), h('small', {}, o ? it.name : hidden ? '？？？' : it.give ? '特典' : it.ev ? '限定' : '？'));
+      onclick: () => { if (o && it.kind === 'stamp') previewFx(it.def); if (o && it.kind === 'bg') { eqSet('bg', it.bgKey); showToast('🎨 「' + it.name + '」を、描く紙にしました'); renderGacha(); } } },
+      h('span', { class: 'ic' }, hidden ? '？' : itemIcon(it) ), h('small', {}, o ? (it.kind === 'bg' && eqGet('bg') === it.bgKey ? '✔' + it.name : it.name) : hidden ? '？？？' : it.give ? '特典' : it.ev ? '限定' : '？'));
   }));
   const unown = items.filter(it => !own(it) && !it.ev && it.rar !== 'sec');
   const swapRow = (icon, title, sub, cost, onSwap) => h('div', { class: 'gc-row' }, h('span', { style: 'font-size:26px;width:44px;text-align:center' }, icon),
@@ -4046,7 +4100,8 @@ function renderGacha(tab) {
     ] : h('p', { style: 'font-weight:800' }, '🎉 すべて手に入れました！'));
   const tabs = h('div', { class: 'seg', role: 'group', 'aria-label': '表示' },
     h('button', { type: 'button', 'aria-pressed': String(gTab === 'zukan'), onclick: () => renderGacha('zukan') }, `図鑑 ${items.filter(own).length}/${items.length}`),
-    h('button', { type: 'button', 'aria-pressed': String(gTab === 'swap'), onclick: () => renderGacha('swap') }, 'カケラ交換'));
+    h('button', { type: 'button', 'aria-pressed': String(gTab === 'swap'), onclick: () => renderGacha('swap') }, 'カケラ交換'),
+    h('button', { type: 'button', 'aria-pressed': String(gTab === 'dress'), onclick: () => renderGacha('dress') }, '🎨 きせかえ'));
   fill($('#scr-gacha'),
     h('h2', { style: 'margin:0 auto;font-size:22px' }, '🎁 ごほうびカプセル'),
     h('div', { class: 'card stack', style: 'text-align:center' },
@@ -4060,7 +4115,20 @@ function renderGacha(tab) {
     ...gifts.map(gf => h('div', { class: 'card stack', style: 'text-align:center;background:#FFF3C4' },
       h('b', {}, '🎁 運営からのプレゼント'), h('p', { style: 'font-weight:800' }, gf.title || ''), gf.msg ? h('small', { style: 'font-weight:700' }, gf.msg) : null,
       h('button', { class: 'btn primary', type: 'button', onclick: () => claimGift(gf) }, '受け取る'))),
-    tabs, gTab === 'zukan' ? grid : swap);
+    tabs, gTab === 'zukan' ? grid : gTab === 'dress' ? dressTab(g) : swap);
+}
+function dressTab(g) {
+  const cur = eqGet('bg'), ownBgs = BGS.filter(d => g.own.includes('b_' + d[0])).sort((a, b) => RAR_ORDER.indexOf(a[3]) - RAR_ORDER.indexOf(b[3]));
+  const pick = (key, label) => h('button', { class: 'gc-it' + (cur === key ? ' on' : '') + (key ? ' r-' + BG_BY[key][3] : ''), type: 'button', 'aria-pressed': String(cur === key), 'aria-label': label,
+    onclick: () => { eqSet('bg', key); SND.sfx('tap'); renderGacha(); } },
+    h('span', { class: 'ic' }, key ? bgSwatch(key) : h('span', { class: 'gc-sw', 'aria-hidden': 'true' })), h('small', {}, (cur === key ? '✔' : '') + label));
+  const prev = h('div', { class: 'dress-prev' }, h('span', { class: 'paper' + (cur && BG_BY[cur] && g.own.includes('b_' + cur) ? ' bg-' + cur : '') }), h('b', {}, cur && BG_BY[cur] ? BG_BY[cur][2] : 'ふつうの白'));
+  return h('div', { class: 'stack' },
+    h('small', { style: 'font-weight:800' }, '描くときの紙をえらべます。見た目だけで、AIの採点には関係しません。（習字の道は、いつも半紙）'),
+    prev,
+    h('b', {}, '🗒 紙'),
+    h('div', { class: 'gc-grid' }, pick('', 'ふつうの白'), ...ownBgs.map(d => pick(d[0], d[2]))),
+    h('small', { style: 'font-weight:800;opacity:.8' }, `手に入れた紙 ${ownBgs.length}/${BGS.length}　カプセルや、カケラ交換で手に入ります`));
 }
 function pullUI() {
   const res = doPull();
@@ -4073,7 +4141,7 @@ function pullUI() {
     const flash = h('div', { class: 'gc-flash', 'aria-hidden': 'true' }); document.body.append(flash); setTimeout(() => flash.remove(), 700);
     const again = gState().tix > 0;
     const close = () => { ov.remove(); renderGacha(); gUpdateBadge(); };
-    let body;
+    let body, extra = null;
     if (res.kind === 'miss') {
       SND.sfx('tap');
       body = [h('div', { class: 'big', 'aria-hidden': 'true' }, '💨'), h('div', { class: 'gc-rar' }, 'ハズレ…'), h('p', { style: 'font-weight:800' }, 'でも、♥ボーナス ＋1 と、💎カケラ ＋2 をゲット！')];
@@ -4083,8 +4151,9 @@ function pullUI() {
       body = [h('div', { class: 'gc-rar', style: `color:${RAR_COL[res.kind]}` }, RAR_STAR[res.kind] + '！'), h('div', { class: 'big' }, itemIcon(it)), h('b', { style: 'font-size:22px' }, it.name),
         res.dup ? h('p', { style: 'font-weight:800' }, 'ダブり！ 💎カケラ ＋' + res.shards + ' になりました') : h('p', { style: 'font-weight:800' }, '新しく手に入れました！')];
       if (it.kind === 'stamp') setTimeout(() => previewFx(it.def), 250);
+      if (it.kind === 'bg') extra = h('button', { class: 'btn', type: 'button', onclick: () => { eqSet('bg', it.bgKey); showToast('🎨 「' + it.name + '」を、描く紙にしました'); extra.disabled = true; } }, 'この紙をつかう');
     }
-    ov.replaceChildren(h('div', { class: 'gc-res' }, ...body,
+    ov.replaceChildren(h('div', { class: 'gc-res' }, ...body, extra,
       h('div', { class: 'row2', style: 'width:100%;gap:8px' }, h('button', { class: 'btn', type: 'button', onclick: close }, 'とじる'),
         again ? h('button', { class: 'btn primary', type: 'button', onclick: () => { ov.remove(); pullUI(); } }, 'もう1回') : null)));
   }, delay);
@@ -4172,7 +4241,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !/^(
   addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 }
 
-if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { newsUnseen, showNews, S, buildPrompt: x => buildPrompt(x), courseLocked, courseIds, courseIdx, stageNo, showCourse, showGuide, previewFx, STAMP_BY, G_RATE, swapItem, titlesBadge, sgClaim, sgPending, sgRew, startStage, showStages, stageStars, STAGES, titleClaim, T_REW, titlesCheck, titlesCtx, TITLES, statsLoad, showTitles, ALB, albumCollect, showAlbum, challengeTopic, myXp: () => myXp(), lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
+if (window.__fbSdkMock || location.hostname === '127.0.0.1') window.__dbg = { BGS, eqSet, paintPaper, newsUnseen, showNews, S, buildPrompt: x => buildPrompt(x), courseLocked, courseIds, courseIdx, stageNo, showCourse, showGuide, previewFx, STAMP_BY, G_RATE, swapItem, titlesBadge, sgClaim, sgPending, sgRew, startStage, showStages, stageStars, STAGES, titleClaim, T_REW, titlesCheck, titlesCtx, TITLES, statsLoad, showTitles, ALB, albumCollect, showAlbum, challengeTopic, myXp: () => myXp(), lenientJSON: t => lenientJSON(t), setEvents: o => { NET.events = o; gUpdateBadge(); misBadge(); refreshEvBanner(); }, evClaim: id => evClaim(id), evActiveIds: () => evActiveIds(), pickTopic: () => pickTopic(), misLoad: () => misLoad(), misList: () => misList(misLoad()), misClaim: k => misClaim(k), misCount: r => misCount(r), recordHistory: r => recordHistory(r), awardXp: r => awardXp(r), flushXp: () => flushXp(), pendXp: () => pendXp(), setPend: n => setPend(n), cloudXp: () => cloudXp(NET.me), rankOf: x => rankOf(x), gState: () => gState(), gSave: x => gSave(x), doPull: () => doPull(), setKind: k => { dbgKind = k; }, swapItem: id => swapItem(gItems().find(i => i.id === id)), autoGrants: () => autoGrants(), heartTotal: () => heartTotal(), heartState: () => heartState(), spendHeart: () => spendHeart(), setHeart: (hp, at) => { localStorage.setItem('dbHeart', JSON.stringify({ hp, at })); if (NET.players[NET.me]) NET.players[NET.me] = { ...NET.players[NET.me], hp, hpAt: at }; }, rename: n => { PROFILE.name = n; return pushProfile(); } };
 
 function boot(saved) {
   if (saved && typeof saved === 'object') {
