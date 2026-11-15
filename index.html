@@ -14,6 +14,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&family=Yuji+Boku&display=swap&text=%E4%B8%80%E5%8D%81%E5%B1%B1%E5%B7%9D%E6%9C%A8%E8%8A%B1%E7%A9%BA%E5%85%89%E6%B0%B8%E5%A4%A2%E5%8F%8B%E6%83%85%E5%85%83%E6%B0%97%E6%84%9F%E8%AC%9D%E5%8B%87%E5%B8%8C%E6%9C%9B%E5%8A%AA%E5%8A%9B%E5%B9%B3%E5%92%8C%E6%9C%9F%E4%BC%9A%E9%A2%A8%E6%9E%97%E7%81%AB%E6%97%A5%E3%80%85%E7%B2%BE%E9%80%B2" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&family=Mochiy+Pop+One&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -71,6 +72,10 @@ h2{font-family:var(--f-display);font-weight:400;text-wrap:balance}
 :focus-visible{outline:3px dashed var(--ink);outline-offset:3px}
 
 [hidden]{display:none!important}
+.shuji-paper{position:relative;margin:0 auto;border:3px solid var(--ink);border-radius:6px;background-color:#FBF6E6;box-shadow:0 3px 0 rgba(27,27,47,.25);display:grid;place-items:center;color:#161616;overflow:hidden}
+.shuji-paper.one{width:210px;height:210px;background-image:linear-gradient(to right,transparent calc(50% - .5px),rgba(224,57,31,.4) calc(50% - .5px),rgba(224,57,31,.4) calc(50% + .5px),transparent calc(50% + .5px)),linear-gradient(to bottom,transparent calc(50% - .5px),rgba(224,57,31,.4) calc(50% - .5px),rgba(224,57,31,.4) calc(50% + .5px),transparent calc(50% + .5px)),linear-gradient(to top right,transparent calc(50% - .5px),rgba(224,57,31,.2) calc(50% - .5px),rgba(224,57,31,.2) calc(50% + .5px),transparent calc(50% + .5px)),linear-gradient(to bottom right,transparent calc(50% - .5px),rgba(224,57,31,.2) calc(50% - .5px),rgba(224,57,31,.2) calc(50% + .5px),transparent calc(50% + .5px))}
+.shuji-paper.many{padding:14px 10px;background-image:linear-gradient(to right,transparent calc(50% - .5px),rgba(224,57,31,.35) calc(50% - .5px),rgba(224,57,31,.35) calc(50% + .5px),transparent calc(50% + .5px))}
+.shuji-paper .ch{position:relative;line-height:1.08;text-shadow:.5px 0 0 #161616,-.5px 0 0 #161616,0 .6px 0 #161616}
 #shuji-guide{position:absolute;pointer-events:none;z-index:1;mix-blend-mode:multiply;outline:2px solid rgba(224,57,31,.45);outline-offset:-1px;background:linear-gradient(to right,transparent calc(50% - 1px),rgba(224,57,31,.32) calc(50% - 1px),rgba(224,57,31,.32) calc(50% + 1px),transparent calc(50% + 1px)),linear-gradient(to bottom,transparent calc(50% - 1px),rgba(224,57,31,.32) calc(50% - 1px),rgba(224,57,31,.32) calc(50% + 1px),transparent calc(50% + 1px)),linear-gradient(to top right,transparent calc(50% - .6px),rgba(224,57,31,.16) calc(50% - .6px),rgba(224,57,31,.16) calc(50% + .6px),transparent calc(50% + .6px)),linear-gradient(to bottom right,transparent calc(50% - .6px),rgba(224,57,31,.16) calc(50% - .6px),rgba(224,57,31,.16) calc(50% + .6px),transparent calc(50% + .6px))}
 #blind-note{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;text-align:center;font-family:var(--f-display);font-size:22px;line-height:1.5;color:rgba(27,27,47,.3);padding:30px;z-index:1}
 .modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -878,7 +883,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:37` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:38` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -1028,6 +1033,7 @@ function newRound() {
 /* ---------- お題を自分で書く ---------- */
 let editingTopic = false;
 const cleanTopic = v => String(v || '').replace(/[\r\n\u0000-\u001f]+/g, ' ').trim().slice(0, 24);
+const SHUJI_FONT = "'Yuji Syuku','Yuji Boku','Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif";
 function topicBlock(c, canEdit, apply, rerender) {
   if (editingTopic && canEdit) {
     const input = h('input', { type: 'text', id: 'custom-topic', class: 'reg-input', maxlength: '24', placeholder: '例: 逆立ちするペンギン', 'aria-label': 'お題' });
@@ -1040,7 +1046,10 @@ function topicBlock(c, canEdit, apply, rerender) {
         h('button', { class: 'btn small primary', type: 'button', onclick: ok }, '決定'),
         h('button', { class: 'btn small', type: 'button', onclick: () => { editingTopic = false; rerender(); } }, 'やめる')));
   }
-  if (c.shuji) return h('div', { class: 'topic-card' }, h('p', { class: 'k' }, 'お手本の字'), h('p', { class: 't', style: `font-family:'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif;font-weight:900;line-height:1.15;font-size:${c.topic.length > 2 ? 46 : c.topic.length > 1 ? 64 : 88}px` }, c.topic));
+  if (c.shuji) { const L = [...c.topic].length, one = L === 1, fs = one ? 150 : L === 2 ? 84 : 58;
+    return h('div', { class: 'topic-card', style: 'transform:none' }, h('p', { class: 'k' }, 'お手本'),
+      h('div', { class: 'shuji-paper ' + (one ? 'one' : 'many'), style: one ? '' : `width:${fs + 40}px` },
+        h('span', { class: 'ch', style: `font-family:${SHUJI_FONT};font-size:${fs}px;` + (one ? '' : 'writing-mode:vertical-rl;letter-spacing:.04em') }, c.topic))); }
   return h('div', { class: 'topic-card' }, h('p', { class: 'k' }, c.custom ? '今回のお題（自分で決めた）' : '今回のお題'), h('p', { class: 't' }, c.topic),
     canEdit ? h('button', { class: 'btn small', type: 'button', style: 'margin-top:10px', onclick: () => { editingTopic = true; rerender(); } }, '✎ 自分で書く') : null);
 }
@@ -1160,6 +1169,83 @@ function starPath(c, x, y, r) {
   for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4 - Math.PI / 2, rr = k % 2 ? r * 0.38 : r; c[k ? 'lineTo' : 'moveTo'](x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
   c.closePath();
 }
+const FUDE_CACHE = new WeakMap();
+function fudeRender(s) {
+  const P = s.points, S = s.size, n = P.length, rnd = mulberry((s.seed || 1) ^ 0x2f6b);
+  if (n < 2) return { n, c: null };
+  // 点を少しなめらかに
+  const q = P.map((pt, i) => i === 0 || i === n - 1 ? { x: pt.x, y: pt.y } : { x: (P[i - 1].x + 2 * pt.x + P[i + 1].x) / 4, y: (P[i - 1].y + 2 * pt.y + P[i + 1].y) / 4 });
+  // 速さ(キャンバスのpx/ms)。時刻がなければ16msごととみなす
+  const sp = q.map((pt, i) => { if (!i) return 0; const dt = Math.max(4, Math.min(80, ((P[i].t || 0) - (P[i - 1].t || 0)) || 16)); return Math.hypot(pt.x - q[i - 1].x, pt.y - q[i - 1].y) / dt; });
+  sp[0] = sp[1];
+  for (let pass = 0; pass < 2; pass++) { for (let i = 1; i < n; i++) sp[i] = sp[i - 1] * 0.55 + sp[i] * 0.45; for (let i = n - 2; i >= 0; i--) sp[i] = sp[i + 1] * 0.55 + sp[i] * 0.45; }
+  const VREF = 0.6, f = sp.map(v => v / VREF); // f>1 = はやい
+  const len = [0]; for (let i = 1; i < n; i++) len[i] = len[i - 1] + Math.hypot(q[i].x - q[i - 1].x, q[i].y - q[i - 1].y);
+  const total = len[n - 1] || 1;
+  const endF = (f[n - 1] + f[n - 2] + f[Math.max(0, n - 3)]) / 3;
+  const flick = endF > 1.6 && total > S * 3; // はやく抜けた=はらい / ゆっくり=止め
+  const tailL = flick ? Math.min(total * 0.4, S * 9) : S * 0.9;
+  const w = q.map((pt, i) => {
+    let k = 0.25 + 1.95 / (1 + Math.pow(f[i], 1.25));
+    const fromS = len[i], fromE = total - len[i];
+    const hu = Math.min(1, fromS / (S * 1.6)), head = 0.55 + 0.45 * hu + 0.22 * Math.sin(Math.PI * Math.min(1, hu * 1.1)) * (hu < 1 ? 1 : 0); // 入り(はじめに筆をおさえて太く)
+    const mid = 1 - 0.2 * Math.sin(Math.PI * fromS / total) + 0.05 * Math.sin(fromS / (S * 2.2) + (s.seed % 7)); // 中ほどは少し細く、手書きのゆらぎ
+    const press = flick ? 1 : 1 + 0.14 * Math.exp(-fromE / (S * 1.2)); // 止めは筆をおさえて少しふくらむ
+    let tail = 1;
+    if (fromE < tailL) { const u = 1 - fromE / tailL; tail = flick ? Math.max(0.03, Math.pow(1 - u, 1.35)) : 1 - 0.18 * u; }
+    return S * k * head * mid * press * tail;
+  });
+  for (let i = 1; i < n - 1; i++) w[i] = (w[i - 1] + 2 * w[i] + w[i + 1]) / 4;
+  // 法線
+  const nx = [], ny = [];
+  for (let i = 0; i < n; i++) {
+    const a = q[Math.max(0, i - 2)], b = q[Math.min(n - 1, i + 2)];
+    let dx = b.x - a.x, dy = b.y - a.y; const m = Math.hypot(dx, dy) || 1; dx /= m; dy /= m;
+    nx.push(-dy); ny.push(dx);
+  }
+  const edge = (scale) => {
+    const L = [], R = [];
+    for (let i = 0; i < n; i++) { const h = w[i] * scale / 2; L.push([q[i].x + nx[i] * h, q[i].y + ny[i] * h]); R.push([q[i].x - nx[i] * h, q[i].y - ny[i] * h]); }
+    return [L, R];
+  };
+  const mg = S * 2.2 + 6;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  for (const pt of q) { x0 = Math.min(x0, pt.x); y0 = Math.min(y0, pt.y); x1 = Math.max(x1, pt.x); y1 = Math.max(y1, pt.y); }
+  const bx = Math.max(0, Math.floor(x0 - mg)), by = Math.max(0, Math.floor(y0 - mg));
+  const bw = Math.min(W, Math.ceil(x1 + mg)) - bx, bh = Math.min(H, Math.ceil(y1 + mg)) - by;
+  if (bw <= 0 || bh <= 0) return { n, c: null };
+  const cv2 = document.createElement('canvas'); cv2.width = bw; cv2.height = bh;
+  const g = cv2.getContext('2d'); g.translate(-bx, -by);
+  const shape = (scale, alpha) => {
+    const [L, R] = edge(scale);
+    g.globalAlpha = alpha; g.fillStyle = s.color; g.beginPath(); g.moveTo(L[0][0], L[0][1]);
+    for (let i = 1; i < n; i++) g.lineTo(L[i][0], L[i][1]);
+    for (let i = n - 1; i >= 0; i--) g.lineTo(R[i][0], R[i][1]);
+    g.closePath(); g.fill();
+    if (alpha > 0.5) { // 入りと止めの丸み
+      g.beginPath(); g.arc(q[0].x, q[0].y, w[0] * scale / 2, 0, Math.PI * 2); g.fill();
+      if (!flick) { g.beginPath(); g.arc(q[n - 1].x, q[n - 1].y, w[n - 1] * scale / 2, 0, Math.PI * 2); g.fill(); }
+    }
+  };
+  shape(1.1, 0.1); // にじみ
+  shape(1, 1);
+  g.globalAlpha = 1;
+  // かすれ: はやい所に、毛先のすきまのような細い筋をぬく
+  g.globalCompositeOperation = 'destination-out'; g.lineCap = 'round';
+  const lanes = 9, on = new Array(lanes).fill(false), lo = Array.from({ length: lanes }, (_, k) => -0.42 + 0.84 * k / (lanes - 1) + (rnd() - 0.5) * 0.1), lw = Array.from({ length: lanes }, () => 1.2 + rnd() * 3);
+  for (let i = 1; i < n; i++) {
+    const strength = Math.max(0, Math.min(1, (f[i] - 1.0) / 1.5));
+    for (let k = 0; k < lanes; k++) {
+      if (!on[k]) { if (strength > 0.08 && rnd() < 0.06 + strength * 0.12) on[k] = true; }
+      else if (rnd() < 0.05 + (1 - strength) * 0.25) on[k] = false;
+      if (!on[k] || strength <= 0.05) continue;
+      const h0 = w[i - 1] * lo[k] , h1 = w[i] * lo[k];
+      g.globalAlpha = Math.min(1, 0.35 + strength * 0.65); g.lineWidth = lw[k];
+      g.beginPath(); g.moveTo(q[i - 1].x + nx[i - 1] * h0, q[i - 1].y + ny[i - 1] * h0); g.lineTo(q[i].x + nx[i] * h1, q[i].y + ny[i] * h1); g.stroke();
+    }
+  }
+  return { n, c: cv2, bx, by };
+}
 const PEN_FN = {
   rainbow(c, s) {
     const p = s.points, base = (s.seed || 0) % 360;
@@ -1187,23 +1273,13 @@ const PEN_FN = {
     }
   },
   fude(c, s) {
-    // 習字の筆: ゆっくり=太く、はやい=細く。はじめは入り、おわりは払いで細くなる
-    const p = s.points, S = s.size;
-    c.lineCap = 'round'; c.lineJoin = 'round'; c.strokeStyle = s.color; c.fillStyle = s.color;
-    if (p.length < 3) { c.beginPath(); c.arc(p[0].x, p[0].y, S * 0.75, 0, Math.PI * 2); c.fill(); if (p.length === 1) return; }
-    const n = p.length, w = new Array(n);
-    let v = 0;
-    for (let i = 0; i < n; i++) {
-      const d = i ? Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y) : 0;
-      v = i ? v * 0.8 + d * 0.2 : 0;
-      let k = 0.3 + 1.2 / (1 + v / 7);
-      const head = Math.min(1, 0.55 + i / 6), tail = Math.min(1, 0.22 + (n - 1 - i) / 9);
-      w[i] = S * k * head * tail;
-    }
-    for (let i = 1; i < n; i++) {
-      c.lineWidth = (w[i - 1] + w[i]) / 2;
-      c.beginPath(); c.moveTo(p[i - 1].x, p[i - 1].y); c.lineTo(p[i].x, p[i].y); c.stroke();
-    }
+    // 習字の筆: ゆっくり=太く・はやい=細く。入りは丸く、止めは丸く、はらいは細くとがる。はやい所はかすれる
+    const P = s.points, S = s.size, n0 = P.length;
+    c.fillStyle = s.color;
+    if (n0 < 3) { c.beginPath(); c.arc(P[0].x, P[0].y, S * 0.7, 0, Math.PI * 2); c.fill(); if (n0 === 1) return; }
+    let hit = FUDE_CACHE.get(s);
+    if (!hit || hit.n !== n0) { hit = fudeRender(s); FUDE_CACHE.set(s, hit); }
+    if (hit.c) c.drawImage(hit.c, hit.bx, hit.by);
   },
   neon(c, s) {
     const p = s.points;
@@ -1268,7 +1344,7 @@ function redraw() {
 function toPt(e) {
   const r = cv.getBoundingClientRect();
   const cw = cv.clientWidth || r.width, ch = cv.clientHeight || r.height;
-  return { x: (e.clientX - r.left - cv.clientLeft) * (W / cw), y: (e.clientY - r.top - cv.clientTop) * (H / ch) };
+  return { x: (e.clientX - r.left - cv.clientLeft) * (W / cw), y: (e.clientY - r.top - cv.clientTop) * (H / ch), t: e.timeStamp };
 }
 cv.addEventListener('pointerdown', e => {
   if (!D.drawing || D.cur) return;
@@ -1311,7 +1387,7 @@ function startDraw() {
   buildTools();
   $('#d-who').replaceChildren(avatar(i, 30), h('span', { class: 'nm' }, S.players[i]));
   $('#d-topic').textContent = c.topic;
-  $('#d-topic').style.cssText = c.shuji ? "font-family:'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif;font-size:24px;font-weight:900" : '';
+  $('#d-topic').style.cssText = c.shuji ? `font-family:${SHUJI_FONT};font-size:28px` : '';
   $('#d-rule').hidden = !D.rule;
   if (D.rule) $('#d-rule-t').textContent = D.rule.name + (D.rule.id === 'rush' ? `（${D.total}秒）` : '');
   $('#blind-note').hidden = !D.blind;
