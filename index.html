@@ -884,7 +884,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:41` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:42` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -1172,9 +1172,10 @@ function starPath(c, x, y, r) {
   c.closePath();
 }
 const FUDE_CACHE = new WeakMap();
-function fudeRender(s) {
+let FUDE_SCR = null;
+function fudeRender(s, keep) {
   const P = s.points, S = s.size, n = P.length, rnd = mulberry((s.seed || 1) ^ 0x2f6b);
-  if (n < 2) return { n, d: !!s.done, c: null };
+  if (n < 2) return { n, c: null };
   // 点を少しなめらかに
   const q = P.map((pt, i) => i === 0 || i === n - 1 ? { x: pt.x, y: pt.y } : { x: (P[i - 1].x + 2 * pt.x + P[i + 1].x) / 4, y: (P[i - 1].y + 2 * pt.y + P[i + 1].y) / 4 });
   // 速さ(キャンバスのpx/ms)。時刻がなければ16msごととみなす
@@ -1191,9 +1192,9 @@ function fudeRender(s) {
     return S * k * head * wob;
   });
   for (let i = 1; i < n; i++) w[i] = w[i - 1] * 0.45 + w[i] * 0.55; // 前からだけなめらかに
-  // 筆をはなした所(書き終わり)だけ、はやく抜けていたら少し細くする
-  const endF = (f[n - 1] + f[Math.max(0, n - 2)]) / 2, flick = !!s.done && endF > 1.2;
-  if (flick) { const tl = Math.min(total * 0.5, S * 3), st = Math.min(1, (endF - 1.2) / 1.5); for (let i = 0; i < n; i++) { const fe = total - len[i]; if (fe < tl) w[i] *= 1 - 0.7 * st * Math.pow(1 - fe / tl, 1.4); } }
+  // 先端は、今の速さだけで細さが決まる(書いている途中も、離した後も、同じ形)。はやいほど先がスッと細くなる
+  const cf = (f[n - 1] + f[Math.max(0, n - 2)] + f[Math.max(0, n - 3)]) / 3, st = Math.max(0, Math.min(1, (cf - 0.9) / 1.6));
+  if (st > 0.02) { const tl = S * (1.5 + 4 * st); for (let i = 0; i < n; i++) { const fe = total - len[i]; if (fe < tl) w[i] *= 1 - 0.85 * st * Math.pow(1 - fe / tl, 1.3); } }
   // 法線
   const nx = [], ny = [];
   for (let i = 0; i < n; i++) {
@@ -1211,9 +1212,11 @@ function fudeRender(s) {
   for (const pt of q) { x0 = Math.min(x0, pt.x); y0 = Math.min(y0, pt.y); x1 = Math.max(x1, pt.x); y1 = Math.max(y1, pt.y); }
   const bx = Math.max(0, Math.floor(x0 - mg)), by = Math.max(0, Math.floor(y0 - mg));
   const bw = Math.min(W, Math.ceil(x1 + mg)) - bx, bh = Math.min(H, Math.ceil(y1 + mg)) - by;
-  if (bw <= 0 || bh <= 0) return { n, d: !!s.done, c: null };
-  const cv2 = document.createElement('canvas'); cv2.width = bw; cv2.height = bh;
-  const g = cv2.getContext('2d'); g.translate(-bx, -by);
+  if (bw <= 0 || bh <= 0) return { n, c: null };
+  let cv2;
+  if (keep) { cv2 = document.createElement('canvas'); cv2.width = bw; cv2.height = bh; }
+  else { if (!FUDE_SCR) { FUDE_SCR = document.createElement('canvas'); FUDE_SCR.width = W; FUDE_SCR.height = H; } cv2 = FUDE_SCR; }
+  const g = cv2.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1; g.clearRect(0, 0, bw, bh); g.translate(-bx, -by);
   const shape = (scale, alpha) => {
     const [L, R] = edge(scale);
     g.globalAlpha = alpha; g.fillStyle = s.color; g.beginPath(); g.moveTo(L[0][0], L[0][1]);
@@ -1222,7 +1225,7 @@ function fudeRender(s) {
     g.closePath(); g.fill();
     if (alpha > 0.5) { // 入りと止めの丸み
       g.beginPath(); g.arc(q[0].x, q[0].y, w[0] * scale / 2, 0, Math.PI * 2); g.fill();
-      g.beginPath(); g.arc(q[n - 1].x, q[n - 1].y, w[n - 1] * scale / 2, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(q[n - 1].x, q[n - 1].y, Math.max(0.5, w[n - 1] * scale / 2), 0, Math.PI * 2); g.fill();
     }
   };
   shape(1.1, 0.1); // にじみ
@@ -1242,7 +1245,7 @@ function fudeRender(s) {
       g.beginPath(); g.moveTo(q[i - 1].x + nx[i - 1] * h0, q[i - 1].y + ny[i - 1] * h0); g.lineTo(q[i].x + nx[i] * h1, q[i].y + ny[i] * h1); g.stroke();
     }
   }
-  return { n, d: !!s.done, c: cv2, bx, by };
+  return { n, c: cv2, bx, by, bw, bh };
 }
 const PEN_FN = {
   rainbow(c, s) {
@@ -1276,8 +1279,11 @@ const PEN_FN = {
     c.fillStyle = s.color;
     if (n0 < 3) { c.beginPath(); c.arc(P[0].x, P[0].y, S * 0.7, 0, Math.PI * 2); c.fill(); if (n0 === 1) return; }
     let hit = FUDE_CACHE.get(s);
-    if (!hit || hit.n !== n0 || hit.d !== !!s.done) { hit = fudeRender(s); FUDE_CACHE.set(s, hit); }
-    if (hit.c) c.drawImage(hit.c, hit.bx, hit.by);
+    if (!(s.done && hit && hit.n === n0)) {
+      hit = fudeRender(s, s.done);
+      if (s.done) FUDE_CACHE.set(s, hit);
+    }
+    if (hit.c) c.drawImage(hit.c, 0, 0, hit.bw, hit.bh, hit.bx, hit.by, hit.bw, hit.bh);
   },
   neon(c, s) {
     const p = s.points;
@@ -1361,7 +1367,7 @@ cv.addEventListener('pointermove', e => {
   for (const ev of (evs.length ? evs : [e])) D.cur.points.push(toPt(ev));
   if (!D.blind) redraw();
 });
-const endStroke = e => { if (D.cur && e.pointerId === D.ptr) { D.cur.done = true; if (!D.blind && D.cur.pen === 'fude') redraw(); D.cur = null; D.ptr = null; if (D.one) finishDraw('done'); } };
+const endStroke = e => { if (D.cur && e.pointerId === D.ptr) { D.cur.done = true; D.cur = null; D.ptr = null; if (D.one) finishDraw('done'); } };
 cv.addEventListener('pointerup', endStroke);
 cv.addEventListener('pointercancel', endStroke);
 
