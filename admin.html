@@ -50,6 +50,10 @@ onAuthStateChanged(auth,async u=>{
   const max=Math.max(1,...days.map(d=>by[d].u.size));
   let h='<h2>今日 ('+days[0]+')</h2><div class="row"><div class="card tap" data-d="'+days[0]+'"><div class="big">'+t.u.size+'</div><div class="sm">利用者(タップで名前)</div></div><div class="card"><div class="big">'+t.n+'</div><div class="sm">新規</div></div><div class="card"><div class="big">'+sum(t.p)+'</div><div class="sm">プレイ数</div></div></div>';
   const aiTot=sum(t.ai),aiOk=t.ai.ok||0;
+  const LIM=500,pct=Math.min(100,Math.round(aiTot/LIM*100)),col=pct>=80?'#c0392b':pct>=60?'#e08a00':'#2e9e5b';
+  const per=t.u.size?(aiTot/t.u.size).toFixed(1):'-';
+  const meter='<div class="card"><b>AI採点の無料枠 (目安)</b> <span style="color:'+col+';font-weight:700">'+aiTot+' / '+LIM+' 回 ('+pct+'%)</span><div style="background:#eee;border-radius:6px;height:12px;margin:6px 0"><div style="width:'+pct+'%;height:12px;border-radius:6px;background:'+col+'"></div></div>'+(pct>=80?'<span class="warn">もうすぐ上限です。人数を増やすのは待ち、有料枠への切り替えを考えてください。</span><br>':pct>=60?'<span style="color:#e08a00;font-weight:700">6割をこえました。広める前に様子を見てください。</span><br>':'')+'<span class="sm">1人あたり '+per+' 回 ・ 今日の利用者 '+t.u.size+'人 ・ この人数で上限に届くのは、1人あたり約 '+(t.u.size?Math.round(LIM/t.u.size):'-')+' 回のとき<br>※ 上限の数え方は日本時間の0時ではなく、アメリカ太平洋時間の0時(日本の夕方)で切り替わります。数字は目安です。</span></div>';
+  h+=meter;
   h+='<h2>AI審査 (今日)</h2><div class="card">成功 <b>'+aiOk+'</b> / 呼び出し '+aiTot+'<br>'+Object.entries(t.ai).filter(([k])=>k!=='ok').map(([k,v])=>({p_trunc:'返事が途中で切れた',p_empty:'返事が空',p_json:'形式が崩れた',p_other:'点数が足りない等',parse:'読み取り失敗(旧)',quota:'無料枠切れ',timeout:'時間切れ',network:'通信',server:'サーバー',rate_limited:'混雑'}[k]||k)+': '+v).join(' / ')+(t.ai.quota?'<br><span class="warn">無料枠切れ '+t.q+'人が経験 (最初 '+tm(t.qAt)+')</span>':'')+'<div class="sm">※ AIの呼び出し数は再試行を含みます。無料枠の目安は1日約500回。</div></div>';
   h+='<h2>モード別プレイ (今日)</h2><div class="card">'+(Object.entries(t.p).map(([k,v])=>k+': '+v).join(' / ')||'まだなし')+'</div>';
   h+='<h2>昨日の新規が今日も来た率</h2><div class="card">'+ret+'</div>';
