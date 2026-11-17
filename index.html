@@ -932,7 +932,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:47` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:48` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -1106,6 +1106,16 @@ function topicBlock(c, canEdit, apply, rerender) {
     canEdit ? h('button', { class: 'btn small', type: 'button', style: 'margin-top:10px', onclick: () => { editingTopic = true; rerender(); } }, '✎ 自分で書く') : null);
 }
 
+// お題の画面から、ひとつ前にもどる(ステージ→マップ、毎日の1題→ホーム、ふだんのあそび→設定画面)
+function introBack() {
+  SND.sfx('tap');
+  const c = S.cur || {};
+  if (c.daily) { dailyHome(); return; }
+  if (S.stage != null) { const ci = courseOf(S.stage); S.challenge = false; S.stage = null; showStages(ci); return; }
+  if (S.challenge) { S.challenge = false; renderTitle(); go('title'); return; }
+  if (S.round > 0) { renderTitle(); go('title'); return; }
+  showSetup();
+}
 function showIntro() {
   const c = S.cur, solo = S.players.length === 1;
   const el = $('#scr-intro');
@@ -1131,7 +1141,8 @@ function showIntro() {
     h('div', { class: 'judge-row' }, badge(c.judge), h('div', {}, h('div', { style: 'font-size:12px;font-weight:800;opacity:.8' }, '審査員'), h('b', { style: 'font-family:var(--f-display);font-weight:400' }, c.judge.name))),
     h('div', { class: 'grow' }),
     c.rerolled ? null : reroll,
-    h('button', { class: 'btn primary big', type: 'button', onclick: solo ? () => { S.cur.pi = 0; startDraw(); } : showPass }, '描きはじめる')
+    h('button', { class: 'btn primary big', type: 'button', onclick: solo ? () => { S.cur.pi = 0; startDraw(); } : showPass }, '描きはじめる'),
+    h('button', { class: 'btn small', type: 'button', style: 'align-self:center', onclick: introBack }, S.round > 0 && !S.challenge && !c.daily ? '🏠 ゲームをやめる' : '← もどる')
   );
   go('intro');
   SND.bgm('menu'); SND.sfx('topic');
@@ -1150,7 +1161,8 @@ function showPass() {
       const a = avatar(k, 36); if (k < i) a.classList.add('done'); if (k === i) a.classList.add('done'); return a;
     })),
     h('div', { class: 'grow' }),
-    h('button', { class: 'btn primary big', type: 'button', onclick: startDraw }, `${S.secs}秒スタート！`)
+    h('button', { class: 'btn primary big', type: 'button', onclick: startDraw }, `${S.secs}秒スタート！`),
+    i === 0 ? h('button', { class: 'btn small', type: 'button', style: 'align-self:center', onclick: () => { SND.sfx('tap'); showIntro(); } }, '← お題にもどる') : null
   );
   go('pass');
   SND.bgm('menu'); SND.sfx('pass');
