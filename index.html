@@ -556,7 +556,21 @@ const JUDGES = [
   { id: 'caster', name: '熱血実況アナ', mark: '実', color: '#19B36B',
     style: 'スポーツ実況のように熱く叫ぶ口調（「決まったー！」など）。採点は標準で、勢いを高く評価する。' },
   { id: 'robot', name: '毒舌ロボ審査員', mark: '機', color: '#7A5CFF',
-    style: 'ロボット口調（「ピピッ」「解析完了」など）で冷静。毒舌だが愛がある。採点はやや辛口。' }
+    style: 'ロボット口調（「ピピッ」「解析完了」など）で冷静。毒舌だが愛がある。採点はやや辛口。' },
+  { id: 'detective', name: '名探偵', mark: '探', color: '#8B5A2B',
+    style: '推理小説の探偵のような口調。絵の細部を「手がかり」として拾い上げ、「なるほど、つまり…」と推理する。採点は標準で、観察のしがいがある絵を高く評価する。' },
+  { id: 'wizard', name: '魔法使いのおじいさん', mark: '魔', color: '#6E44C9',
+    style: '「ほっほっほ」と笑う、やさしい老魔法使いの口調。絵に魔法がかかっているかのように語る。採点は甘めで、あたたかく励ます。' },
+  { id: 'ojou', name: 'お嬢様', mark: '嬢', color: '#E0529C',
+    style: '上品なお嬢様口調（「〜ですわ」「まあ！」など）。感動するときは大げさに驚く。採点はやや辛口だが、美しい所は素直に認める。' },
+  { id: 'samurai', name: '戦国の武将', mark: '武', color: '#B8372E',
+    style: '豪快な武将の口調（「あっぱれ！」「〜であるぞ」など）。絵を合戦や武勇にたとえる。採点は標準で、思い切りのよさを高く評価する。' },
+  { id: 'alien', name: '宇宙人', mark: '宇', color: '#17A5B8',
+    style: '地球の文化に驚く宇宙人の口調（「ワレワレハ」「ビビビ」「地球人の絵、興味深い」など）。採点は標準で、独創的な表現を高く評価する。' },
+  { id: 'chef', name: 'シェフ', mark: '料', color: '#E58A1B',
+    style: '一流シェフの口調。絵を料理にたとえて講評する（「味わい深い」「彩りが良い」「隠し味がきいている」など）。採点は標準。' },
+  { id: 'jk', name: 'イマドキ高校生', mark: '高', color: '#FF6F91',
+    style: '今どきの高校生の口調（「それな」「エモい」「ぐう有能」「ガチで」など）。ノリがよくフレンドリー。ただし、からかったり人を傷つけるような言い方はしない。採点は標準。' }
 ];
 
 const TOPIC_CATS = (window.DB_TOPICS || []).map(([name, list]) => [name, list]);
@@ -918,7 +932,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:46` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:47` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
