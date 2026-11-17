@@ -932,7 +932,7 @@ function dbgInfo() {
   return `scr:${sc ? sc.id : '-'} top:${sc ? Math.round(sc.scrollTop) : '-'} sh:${sc ? sc.scrollHeight : '-'} ch:${sc ? sc.clientHeight : '-'}\n` +
     `inner:${innerHeight} vv:${vv ? Math.round(vv.height) : '-'} client:${document.documentElement.clientHeight} screen:${screen.height} app:${app.getBoundingClientRect().height | 0}\n` +
     `docH:${document.documentElement.scrollHeight} bodyH:${document.body.scrollHeight} scrollY:${Math.round(scrollY)} standalone:${navigator.standalone === true} touch:${dbgLast}\n` +
-    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:48` +
+    `tm: net:${NET.state} me:${NET.me ? 'y' : 'n'} last:${TM.t ? Math.round((Date.now() - TM.t) / 1000) + 's前' : '-'} err:${TM.err || '-'} g:${TM.gerr || '-'} snd:${SND.info()} v:49` +
     (() => { const l = lsGet('dbAiBad', []); return l.length ? '\nAI失敗サンプル(' + l.length + '件):\n' + l.map(x => `[${x.d} ${x.n}字] ${x.t.replace(/\s+/g, ' ')}`).join('\n') : ''; })();
 }
 function dbgToggle() {
@@ -1238,7 +1238,7 @@ function starPath(c, x, y, r) {
 const FUDE_CACHE = new WeakMap();
 let FUDE_SCR = null;
 function fudeRender(s, keep) {
-  const P = s.points, S = s.size * 0.62, n = P.length, rnd = mulberry((s.seed || 1) ^ 0x2f6b);
+  const P = s.points, S = s.size, n = P.length, rnd = mulberry((s.seed || 1) ^ 0x2f6b);
   if (n < 2) return { n, c: null };
   // 点を少しなめらかに
   const q = P.map((pt, i) => i === 0 || i === n - 1 ? { x: pt.x, y: pt.y } : { x: (P[i - 1].x + 2 * pt.x + P[i + 1].x) / 4, y: (P[i - 1].y + 2 * pt.y + P[i + 1].y) / 4 });
@@ -1250,7 +1250,7 @@ function fudeRender(s, keep) {
   const len = [0]; for (let i = 1; i < n; i++) len[i] = len[i - 1] + Math.hypot(q[i].x - q[i - 1].x, q[i].y - q[i - 1].y);
   const total = len[n - 1] || 1;
   const w = q.map((pt, i) => {
-    let k = 0.3 + 1.2 / (1 + Math.pow(f[i], 1.25)); // ゆっくり=太い、はやい=細い(はらいは、はやく抜けると自然に細くなる)
+    let k = 0.25 + 1.95 / (1 + Math.pow(f[i], 1.25)); // ゆっくり=太い、はやい=細い(はらいは、はやく抜けると自然に細くなる)
     const hu = Math.min(1, len[i] / (S * 1.6)), head = 0.55 + 0.45 * hu + 0.2 * Math.sin(Math.PI * hu); // 入り(はじめに筆をおさえる)
     const wob = 1 + 0.05 * Math.sin(len[i] / (S * 2.2) + (s.seed % 7)); // 手書きのゆらぎ
     return S * k * head * wob;
